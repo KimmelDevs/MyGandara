@@ -57,6 +57,7 @@ import coil3.compose.AsyncImage
 import com.pikacheat.mygandara.data.model.ReportStatus
 import com.pikacheat.mygandara.data.model.ReportUpdateDto
 import com.pikacheat.mygandara.ui.components.StatusBadge
+import com.pikacheat.mygandara.ui.components.RefreshOnResume
 import com.pikacheat.mygandara.ui.components.UiStateContent
 import com.pikacheat.mygandara.ui.viewmodel.ReportDetail
 import com.pikacheat.mygandara.ui.viewmodel.ReportDetailViewModel
@@ -83,6 +84,8 @@ fun ReportDetailScreen(
             viewModel.clearMessage()
         }
     }
+
+    RefreshOnResume { viewModel.detail.refreshIfLoaded() }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
