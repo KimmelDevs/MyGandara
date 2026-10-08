@@ -57,7 +57,10 @@ fun BulletinScreen(
     currentUserId: String,
     onNewPostClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: BulletinViewModel = viewModel(factory = BulletinViewModel.factory(currentUserId))
+    /** Profile -> "Posts I reacted to": same cards, only posts this user reacted to. */
+    reactedOnly: Boolean = false,
+    onBackClick: (() -> Unit)? = null,
+    viewModel: BulletinViewModel = viewModel(factory = BulletinViewModel.factory(currentUserId, reactedOnly))
 ) {
     val state by viewModel.posts.state.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.posts.isRefreshing.collectAsStateWithLifecycle()
@@ -85,15 +88,16 @@ fun BulletinScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             SearchTopBar(
-                title = "Gandara bulletin",
+                title = if (reactedOnly) "Posts I reacted to" else "Gandara bulletin",
                 query = query,
                 onQueryChange = viewModel::setQuery,
-                searchPlaceholder = "Search announcements"
+                searchPlaceholder = "Search announcements",
+                onBackClick = onBackClick
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            if (canPost) {
+            if (canPost && !reactedOnly) {
                 ExtendedFloatingActionButton(
                     onClick = onNewPostClick,
                     icon = { Icon(Icons.Filled.Campaign, contentDescription = null) },
@@ -134,7 +138,15 @@ fun BulletinScreen(
                     }
                 }
                 if (visible.isEmpty()) {
-                    item { EmptyListText(if (posts.isEmpty()) "No posts yet." else "No posts match your search.") }
+                    item {
+                        EmptyListText(
+                            when {
+                                posts.isNotEmpty() -> "No posts match your search."
+                                reactedOnly -> "You haven't reacted to any posts yet. Tap Like on a post, or long-press it for more reactions."
+                                else -> "No posts yet."
+                            }
+                        )
+                    }
                 }
                 items(visible, key = { it.id }) { post ->
                     val imageUrls = viewModel.imageUrls(post)

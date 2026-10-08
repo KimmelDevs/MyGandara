@@ -196,6 +196,7 @@ private fun SignedInNavGraph(
                     profile = profile,
                     onProfileSaved = onProfileChanged,
                     onOpenPrivacyNotice = { navController.navigate(Screen.PrivacyNotice.route) },
+                    onOpenReactedPosts = { navController.navigate(Screen.ReactedPosts.route) },
                     onSignOut = onSignOut
                 )
             }
@@ -204,6 +205,15 @@ private fun SignedInNavGraph(
             }
             composable(Screen.Hotlines.route) {
                 HotlinesScreen(canEdit = isAdmin)
+            }
+            composable(Screen.ReactedPosts.route) {
+                BulletinScreen(
+                    canPost = isAdmin,
+                    currentUserId = profile.id,
+                    onNewPostClick = {},
+                    reactedOnly = true,
+                    onBackClick = { navController.popBackStack() }
+                )
             }
             composable(Screen.CreateReport.route) {
                 CreateReportScreen(

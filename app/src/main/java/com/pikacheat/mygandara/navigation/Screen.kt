@@ -23,6 +23,7 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object CreateReport : Screen("create_report")
     data object CreatePost : Screen("create_post")
+    data object ReactedPosts : Screen("reacted_posts")
 
     // Both
     data object PrivacyNotice : Screen("privacy_notice")

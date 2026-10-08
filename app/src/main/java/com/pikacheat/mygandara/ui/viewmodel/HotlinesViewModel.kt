@@ -4,31 +4,36 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pikacheat.mygandara.data.model.EmergencyContact
 import com.pikacheat.mygandara.data.model.EmergencyContactInput
+import com.pikacheat.mygandara.data.model.HotlineCategory
+import com.pikacheat.mygandara.data.model.HotlineCategoryInput
 import com.pikacheat.mygandara.data.remote.Tables
 import com.pikacheat.mygandara.data.repository.EmergencyContactRepository
 import com.pikacheat.mygandara.data.repository.RealtimeRepository
 import com.pikacheat.mygandara.util.LocalStore
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 data class HotlinesState(
     val contacts: List<EmergencyContact> = emptyList(),
+    val categories: List<HotlineCategory> = emptyList(),
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
-    /** Set when the latest download failed; cached contacts are still shown. */
+    /** Set when the latest download failed; cached data is still shown. */
     val loadError: String? = null,
     val isSaving: Boolean = false,
     val message: String? = null
 )
 
 /**
- * Emergency hotlines. Shows the copy saved on the phone immediately (works with no signal),
- * then refreshes from Supabase. Admins can add, edit, and delete (enforced by RLS).
+ * Emergency hotlines and their categories. Shows the copy saved on the phone immediately (works with no signal),
+ * then refreshes from Supabase. Admins can manage both (enforced by RLS).
  */
 class HotlinesViewModel(
     private val repository: EmergencyContactRepository,
@@ -37,13 +42,20 @@ class HotlinesViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
-        localStore.cachedContacts.let { cached -> HotlinesState(contacts = cached, isLoading = cached.isEmpty()) }
+        HotlinesState(
+            contacts = localStore.cachedContacts,
+            categories = localStore.cachedHotlineCategories,
+            isLoading = localStore.cachedContacts.isEmpty()
+        )
     )
     val state: StateFlow<HotlinesState> = _state.asStateFlow()
 
     init {
         refresh(showIndicator = false)
-        realtimeRepository.tableChanges(Tables.EMERGENCY_CONTACTS)
+        merge(
+            realtimeRepository.tableChanges(Tables.EMERGENCY_CONTACTS),
+            realtimeRepository.tableChanges(Tables.HOTLINE_CATEGORIES)
+        )
             .onEach { refresh(showIndicator = false) }
             .catch { }
             .launchIn(viewModelScope)
@@ -52,11 +64,23 @@ class HotlinesViewModel(
     fun refresh(showIndicator: Boolean = true) {
         viewModelScope.launch {
             if (showIndicator) _state.value = _state.value.copy(isRefreshing = true)
-            when (val result = loadState { repository.getContacts() }) {
+            val result = loadState {
+                val contacts = async { repository.getContacts() }
+                // Categories are optional: if migration 0006 hasn't run yet, hotlines still load.
+                val categories = async { runCatching { repository.getCategories() }.getOrDefault(emptyList()) }
+                contacts.await() to categories.await()
+            }
+            when (result) {
                 is UiState.Success -> {
-                    localStore.cachedContacts = result.data
+                    val (contacts, categories) = result.data
+                    localStore.cachedContacts = contacts
+                    localStore.cachedHotlineCategories = categories
                     _state.value = _state.value.copy(
-                        contacts = result.data, isLoading = false, isRefreshing = false, loadError = null
+                        contacts = contacts,
+                        categories = categories,
+                        isLoading = false,
+                        isRefreshing = false,
+                        loadError = null
                     )
                 }
                 is UiState.Error -> _state.value = _state.value.copy(
@@ -67,8 +91,16 @@ class HotlinesViewModel(
         }
     }
 
+    /** Hotlines grouped under their category, categories in admin-set order; uncategorised last. */
+    fun grouped(state: HotlinesState): List<Pair<HotlineCategory?, List<EmergencyContact>>> {
+        val byId = state.categories.associateBy { it.id }
+        val groups = state.contacts.groupBy { contact -> contact.categoryId?.let(byId::get) }
+        return state.categories.mapNotNull { category -> groups[category]?.let { category to it } } +
+            listOfNotNull(groups[null]?.let { null to it })
+    }
+
     /** Add when [existing] is null, otherwise update it. */
-    fun save(existing: EmergencyContact?, input: EmergencyContactInput, onDone: () -> Unit) {
+    fun saveContact(existing: EmergencyContact?, input: EmergencyContactInput, onDone: () -> Unit) {
         val name = input.name.trim()
         val phone = input.phone.trim()
         when {
@@ -81,7 +113,19 @@ class HotlinesViewModel(
         }
     }
 
-    fun delete(contact: EmergencyContact) = mutate("Hotline deleted") { repository.delete(contact.id) }
+    fun deleteContact(contact: EmergencyContact) = mutate("Hotline deleted") { repository.delete(contact.id) }
+
+    fun saveCategory(existing: HotlineCategory?, input: HotlineCategoryInput, onDone: () -> Unit) {
+        val name = input.name.trim()
+        if (name.length < 2) return showMessage("Enter a name.")
+        val clean = input.copy(name = name)
+        mutate(if (existing == null) "Category added" else "Category updated", onDone) {
+            if (existing == null) repository.addCategory(clean) else repository.updateCategory(existing.id, clean)
+        }
+    }
+
+    fun deleteCategory(category: HotlineCategory) =
+        mutate("Category deleted") { repository.deleteCategory(category.id) }
 
     private fun mutate(success: String, onDone: () -> Unit = {}, block: suspend () -> Unit) {
         if (_state.value.isSaving) return
@@ -96,7 +140,7 @@ class HotlinesViewModel(
         }
     }
 
-    private fun showMessage(message: String) {
+    fun showMessage(message: String) {
         _state.value = _state.value.copy(message = message)
     }
 

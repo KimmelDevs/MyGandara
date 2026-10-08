@@ -316,6 +316,42 @@ val WarayStrings: Map<String, String> = mapOf(
     "Date" to "Petsa",
     "Status" to "Status",
 
+    // Passwords
+    "Confirm password" to "Kumpirmaha an password",
+    "Passwords don't match." to "Diri pareho an mga password.",
+    "Show password" to "Ipakita an password",
+    "Hide password" to "Tagoa an password",
+
+    // Hotline actions & categories
+    "Tap a hotline to call or copy its number. Numbers are saved on your phone, so they still show without internet." to
+        "I-tap an hotline para tumawag o kopyahon an numero. Natipig an mga numero ha imo telepono, salit makikita gihapon bisan waray internet.",
+    "Call" to "Tawag",
+    "Copy number" to "Kopyaha an numero",
+    "Show options" to "Ipakita an mga pagpipilian",
+    "Hide options" to "Tagoa an mga pagpipilian",
+    "Manage categories" to "Dumalaha an mga kategorya",
+    "Hotline categories" to "Mga kategorya han hotline",
+    "Categories group the hotlines. Deleting one moves its hotlines to \"Other\"." to
+        "An kategorya nagtitirok han mga hotline. Kun panason, an mga hotline hini mabalhin ha \"Iba pa\".",
+    "%d hotlines" to "%d nga hotline",
+    "Add category" to "Pagdugang hin kategorya",
+    "Edit category" to "Edit-a an kategorya",
+    "Delete category?" to "Panason an kategorya?",
+    "\"%s\" will be removed. Its hotlines will move to \"Other\"." to
+        "Mapapanas an \"%s\". An mga hotline hini mabalhin ha \"Iba pa\".",
+    "e.g. Barangay hotlines" to "pananglitan Mga hotline han barangay",
+    "Icon" to "Icon",
+    "Urgent" to "Dinalian",
+    "Shown in red, like the national emergency line" to "Pula an kolor, pariho han nasyonal nga emergency hotline",
+    "Category added" to "Nadugang an kategorya",
+    "Category updated" to "Na-update an kategorya",
+    "Category deleted" to "Napanas an kategorya",
+
+    // Reacted posts
+    "Posts I reacted to" to "Mga post nga akon ginreaksyonan",
+    "You haven't reacted to any posts yet. Tap Like on a post, or long-press it for more reactions." to
+        "Waray ka pa ginreaksyonan nga post. I-tap an Karuyag ha usa nga post, o pinduta hin maiha para ha iba nga reaksyon.",
+
     // Appearance
     "Appearance" to "Itsura",
     "System" to "Sundon an telepono",

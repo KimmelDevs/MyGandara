@@ -313,6 +313,42 @@ val FilipinoStrings: Map<String, String> = mapOf(
     "Date" to "Petsa",
     "Status" to "Status",
 
+    // Passwords
+    "Confirm password" to "Kumpirmahin ang password",
+    "Passwords don't match." to "Hindi magkapareho ang mga password.",
+    "Show password" to "Ipakita ang password",
+    "Hide password" to "Itago ang password",
+
+    // Hotline actions & categories
+    "Tap a hotline to call or copy its number. Numbers are saved on your phone, so they still show without internet." to
+        "I-tap ang hotline para tumawag o kopyahin ang numero. Naka-save ang mga numero sa iyong telepono kaya makikita pa rin kahit walang internet.",
+    "Call" to "Tumawag",
+    "Copy number" to "Kopyahin ang numero",
+    "Show options" to "Ipakita ang mga opsyon",
+    "Hide options" to "Itago ang mga opsyon",
+    "Manage categories" to "Pamahalaan ang mga kategorya",
+    "Hotline categories" to "Mga kategorya ng hotline",
+    "Categories group the hotlines. Deleting one moves its hotlines to \"Other\"." to
+        "Pinagsasama-sama ng kategorya ang mga hotline. Kapag binura ito, mapupunta sa \"Iba pa\" ang mga hotline nito.",
+    "%d hotlines" to "%d hotline",
+    "Add category" to "Magdagdag ng kategorya",
+    "Edit category" to "I-edit ang kategorya",
+    "Delete category?" to "Burahin ang kategorya?",
+    "\"%s\" will be removed. Its hotlines will move to \"Other\"." to
+        "Mabubura ang \"%s\". Mapupunta sa \"Iba pa\" ang mga hotline nito.",
+    "e.g. Barangay hotlines" to "hal. Mga hotline ng barangay",
+    "Icon" to "Icon",
+    "Urgent" to "Agaran",
+    "Shown in red, like the national emergency line" to "Naka-pula, gaya ng pambansang emergency hotline",
+    "Category added" to "Naidagdag ang kategorya",
+    "Category updated" to "Na-update ang kategorya",
+    "Category deleted" to "Nabura ang kategorya",
+
+    // Reacted posts
+    "Posts I reacted to" to "Mga post na nireaksyunan ko",
+    "You haven't reacted to any posts yet. Tap Like on a post, or long-press it for more reactions." to
+        "Wala ka pang nireaksyunang post. I-tap ang Gusto sa isang post, o pindutin nang matagal para sa ibang reaksyon.",
+
     // Appearance
     "Appearance" to "Itsura",
     "System" to "Sundin ang telepono",

@@ -46,6 +46,7 @@ fun SearchTopBar(
     query: String,
     onQueryChange: (String) -> Unit,
     searchPlaceholder: String,
+    onBackClick: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     // Start expanded if a search is already active (e.g. after rotation).
@@ -101,6 +102,13 @@ fun SearchTopBar(
         } else {
             TopAppBar(
                 title = { Text(t(title)) },
+                navigationIcon = {
+                    if (onBackClick != null) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"))
+                        }
+                    }
+                },
                 actions = {
                     IconButton(onClick = { searching = true }) {
                         Icon(Icons.Filled.Search, contentDescription = t("Search"))

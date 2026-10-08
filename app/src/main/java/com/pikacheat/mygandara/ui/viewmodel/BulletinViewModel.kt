@@ -34,11 +34,14 @@ data class ReactionSummary(
 class BulletinViewModel(
     private val postRepository: PostRepository,
     realtimeRepository: RealtimeRepository,
-    private val currentUserId: String
+    private val currentUserId: String,
+    /** true = Profile's "Posts I reacted to" list instead of the whole bulletin. */
+    private val reactedOnly: Boolean = false
 ) : ViewModel() {
 
     val posts = Loadable(viewModelScope) {
-        postRepository.getPosts().also { loadReactions(it) }
+        val list = if (reactedOnly) postRepository.getReactedPosts() else postRepository.getPosts()
+        list.also { loadReactions(it) }
     }
 
     /** post id -> everyone's reactions on it. Updated optimistically when the user reacts. */
@@ -142,8 +145,8 @@ class BulletinViewModel(
     }
 
     companion object {
-        fun factory(currentUserId: String) = appViewModelFactory {
-            BulletinViewModel(it.postRepository, it.realtimeRepository, currentUserId)
+        fun factory(currentUserId: String, reactedOnly: Boolean = false) = appViewModelFactory {
+            BulletinViewModel(it.postRepository, it.realtimeRepository, currentUserId, reactedOnly)
         }
     }
 }

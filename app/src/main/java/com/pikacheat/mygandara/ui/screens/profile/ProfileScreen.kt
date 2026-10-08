@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +52,7 @@ fun ProfileScreen(
     profile: Profile,
     onProfileSaved: () -> Unit,
     onOpenPrivacyNotice: () -> Unit,
+    onOpenReactedPosts: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
@@ -122,6 +126,11 @@ fun ProfileScreen(
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            OutlinedButton(onClick = onOpenReactedPosts, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Outlined.ThumbUp, contentDescription = null)
+                Text(t("Posts I reacted to"), modifier = Modifier.padding(start = 8.dp))
+            }
 
             Text(t("Language"), style = MaterialTheme.typography.labelLarge)
             LanguagePicker()

@@ -60,6 +60,19 @@ class PostRepository(private val client: () -> SupabaseClient) {
         return path
     }
 
+    /** Posts the signed-in user has reacted to, newest first. */
+    suspend fun getReactedPosts(): List<PostDto> {
+        val userId = requireNotNull(client().auth.currentUserOrNull()?.id) { "Not signed in" }
+        val postIds = client().from(Tables.POST_REACTIONS).select {
+            filter { eq("user_id", userId) }
+        }.decodeList<PostReaction>().map { it.postId }
+        if (postIds.isEmpty()) return emptyList()
+        return client().from(Tables.POSTS).select {
+            filter { isIn("id", postIds) }
+            order("published_at", Order.DESCENDING)
+        }.decodeList()
+    }
+
     /** Reactions for the given posts (everyone's, so counts can be shown). */
     suspend fun getReactions(postIds: List<String>): List<PostReaction> {
         if (postIds.isEmpty()) return emptyList()

@@ -7,6 +7,7 @@ object Tables {
     const val POSTS = "posts"
     const val POST_REACTIONS = "post_reactions"
     const val EMERGENCY_CONTACTS = "emergency_contacts"
+    const val HOTLINE_CATEGORIES = "hotline_categories"
 }
 
 object Buckets {

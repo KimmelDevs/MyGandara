@@ -3,6 +3,7 @@ package com.pikacheat.mygandara.util
 import android.content.Context
 import androidx.core.content.edit
 import com.pikacheat.mygandara.data.model.EmergencyContact
+import com.pikacheat.mygandara.data.model.HotlineCategory
 import com.pikacheat.mygandara.i18n.AppLanguage
 import kotlinx.serialization.json.Json
 
@@ -39,6 +40,12 @@ class LocalStore(context: Context) {
             ?.let { runCatching { json.decodeFromString<List<EmergencyContact>>(it) }.getOrNull() }
             .orEmpty()
         set(value) = prefs.edit { putString("emergency_contacts", json.encodeToString(value)) }
+
+    var cachedHotlineCategories: List<HotlineCategory>
+        get() = prefs.getString("hotline_categories", null)
+            ?.let { runCatching { json.decodeFromString<List<HotlineCategory>>(it) }.getOrNull() }
+            .orEmpty()
+        set(value) = prefs.edit { putString("hotline_categories", json.encodeToString(value)) }
 
     fun dismissEmergency(postId: String) = prefs.edit { putString("dismissed_emergency", postId) }
 

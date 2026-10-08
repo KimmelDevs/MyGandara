@@ -1,8 +1,13 @@
 package com.pikacheat.mygandara.ui.screens.hotlines
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,16 +24,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Flood
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.LocalHospital
-import androidx.compose.material.icons.filled.LocalPolice
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Power
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -37,11 +41,10 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -59,7 +62,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -68,9 +70,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.pikacheat.mygandara.data.model.ContactCategory
 import com.pikacheat.mygandara.data.model.EmergencyContact
 import com.pikacheat.mygandara.data.model.EmergencyContactInput
+import com.pikacheat.mygandara.data.model.HotlineCategory
+import com.pikacheat.mygandara.data.model.HotlineIcon
 import com.pikacheat.mygandara.i18n.I18n
 import com.pikacheat.mygandara.i18n.LocalLanguage
 import com.pikacheat.mygandara.i18n.t
@@ -93,8 +96,10 @@ fun HotlinesScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val language = LocalLanguage.current
     val context = LocalContext.current
+    var expandedId by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<EditTarget?>(null) }
     var pendingDelete by remember { mutableStateOf<EmergencyContact?>(null) }
+    var managingCategories by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -114,6 +119,13 @@ fun HotlinesScreen(
                     if (onBackClick != null) {
                         IconButton(onClick = onBackClick) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"))
+                        }
+                    }
+                },
+                actions = {
+                    if (canEdit) {
+                        IconButton(onClick = { managingCategories = true }) {
+                            Icon(Icons.Filled.Category, contentDescription = t("Manage categories"))
                         }
                     }
                 }
@@ -142,12 +154,12 @@ fun HotlinesScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp)
                 ) {
                     item {
                         Text(
-                            t("Tap a number to call. These numbers are saved on your phone, so they still show without internet."),
+                            t("Tap a hotline to call or copy its number. Numbers are saved on your phone, so they still show without internet."),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -172,21 +184,26 @@ fun HotlinesScreen(
                             )
                         }
                     }
-                    state.contacts
-                        .groupBy { it.category }
-                        .toSortedMap(compareBy { it.ordinal })
-                        .forEach { (category, contacts) ->
-                            item(key = "header_${category.name}") { ListSectionHeader(category.label) }
-                            items(contacts, key = { it.id }) { contact ->
-                                HotlineCard(
-                                    contact = contact,
-                                    canEdit = canEdit,
-                                    onCall = { dial(context, contact.phone) },
-                                    onEdit = { editing = EditTarget(contact) },
-                                    onDelete = { pendingDelete = contact }
-                                )
-                            }
+                    viewModel.grouped(state).forEach { (category, contacts) ->
+                        item(key = "header_${category?.id ?: "none"}") {
+                            ListSectionHeader(category?.name ?: "Other")
                         }
+                        items(contacts, key = { it.id }) { contact ->
+                            HotlineCard(
+                                contact = contact,
+                                category = category,
+                                expanded = expandedId == contact.id,
+                                onToggle = { expandedId = if (expandedId == contact.id) null else contact.id },
+                                onCall = { dial(context, contact.phone) },
+                                onCopy = {
+                                    copyNumber(context, contact.phone, I18n.tr(language, "Copied %s", contact.phone))
+                                },
+                                canEdit = canEdit,
+                                onEdit = { editing = EditTarget(contact) },
+                                onDelete = { pendingDelete = contact }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -195,8 +212,9 @@ fun HotlinesScreen(
     editing?.let { target ->
         HotlineEditDialog(
             existing = target.contact,
+            categories = state.categories,
             isSaving = state.isSaving,
-            onSave = { input -> viewModel.save(target.contact, input) { editing = null } },
+            onSave = { input -> viewModel.saveContact(target.contact, input) { editing = null } },
             onDismiss = { editing = null }
         )
     }
@@ -207,10 +225,20 @@ fun HotlinesScreen(
             confirmLabel = "Delete",
             destructive = true,
             onConfirm = {
-                viewModel.delete(contact)
+                viewModel.deleteContact(contact)
                 pendingDelete = null
             },
             onDismiss = { pendingDelete = null }
+        )
+    }
+    if (managingCategories) {
+        HotlineCategoriesSheet(
+            categories = state.categories,
+            contacts = state.contacts,
+            isSaving = state.isSaving,
+            onSave = viewModel::saveCategory,
+            onDelete = viewModel::deleteCategory,
+            onDismiss = { managingCategories = false }
         )
     }
 }
@@ -218,60 +246,105 @@ fun HotlinesScreen(
 /** Wrapper so "add new" (null contact) is distinguishable from "no dialog". */
 private data class EditTarget(val contact: EmergencyContact?)
 
+/**
+ * Collapsed: name, number, icon. Tap to expand and reveal Call / Copy number — the call button only
+ * appears after a deliberate tap, and the phone's dialer is a second step, so pocket-calls can't happen.
+ */
 @Composable
 private fun HotlineCard(
     contact: EmergencyContact,
-    canEdit: Boolean,
+    category: HotlineCategory?,
+    expanded: Boolean,
+    onToggle: () -> Unit,
     onCall: () -> Unit,
+    onCopy: () -> Unit,
+    canEdit: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val urgent = contact.category == ContactCategory.EMERGENCY
+    val urgent = category?.isUrgent == true
     Card(
-        onClick = onCall,
+        onClick = onToggle,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (urgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize()
     ) {
-        Row(
-            modifier = Modifier.padding(start = 12.dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                contact.category.icon(),
-                contentDescription = null,
-                tint = if (urgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp)
-            ) {
-                Text(contact.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                Text(
-                    contact.phone,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    HotlineIcon.fromKey(category?.icon).vector(),
+                    contentDescription = null,
+                    tint = if (urgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
                 )
-                contact.note?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp)
+                ) {
+                    Text(contact.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(
+                        contact.phone,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    contact.note?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-            }
-            if (canEdit) {
-                IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, contentDescription = t("Edit")) }
-                IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = t("Delete")) }
-            }
-            FilledIconButton(
-                onClick = onCall,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = if (urgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                Icon(
+                    if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = t(if (expanded) "Hide options" else "Show options"),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            ) {
-                Icon(Icons.Filled.Call, contentDescription = t("Call %s", contact.name))
+            }
+
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier.padding(top = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onCall,
+                            colors = if (urgent) {
+                                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            } else {
+                                ButtonDefaults.buttonColors()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(t("Call"), modifier = Modifier.padding(start = 6.dp))
+                        }
+                        OutlinedButton(onClick = onCopy, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(t("Copy number"), modifier = Modifier.padding(start = 6.dp))
+                        }
+                    }
+                    if (canEdit) {
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = onEdit) {
+                                Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Text(t("Edit"), modifier = Modifier.padding(start = 4.dp))
+                            }
+                            TextButton(onClick = onDelete) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(t("Delete"), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(start = 4.dp))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -281,6 +354,7 @@ private fun HotlineCard(
 @Composable
 private fun HotlineEditDialog(
     existing: EmergencyContact?,
+    categories: List<HotlineCategory>,
     isSaving: Boolean,
     onSave: (EmergencyContactInput) -> Unit,
     onDismiss: () -> Unit
@@ -288,9 +362,10 @@ private fun HotlineEditDialog(
     var name by rememberSaveable { mutableStateOf(existing?.name.orEmpty()) }
     var phone by rememberSaveable { mutableStateOf(existing?.phone.orEmpty()) }
     var note by rememberSaveable { mutableStateOf(existing?.note.orEmpty()) }
-    var category by rememberSaveable { mutableStateOf(existing?.category ?: ContactCategory.FIRE) }
+    var categoryId by rememberSaveable { mutableStateOf(existing?.categoryId ?: categories.firstOrNull()?.id) }
     var order by rememberSaveable { mutableStateOf((existing?.sortOrder ?: 100).toString()) }
     var expanded by remember { mutableStateOf(false) }
+    val selected = categories.firstOrNull { it.id == categoryId }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -299,21 +374,22 @@ private fun HotlineEditDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
                     OutlinedTextField(
-                        value = t(category.label),
+                        value = selected?.name?.let { t(it) } ?: t("Other"),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text(t("Type")) },
+                        label = { Text(t("Category")) },
+                        leadingIcon = { Icon(HotlineIcon.fromKey(selected?.icon).vector(), contentDescription = null) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        ContactCategory.entries.forEach { option ->
+                        categories.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(t(option.label)) },
-                                leadingIcon = { Icon(option.icon(), contentDescription = null) },
-                                onClick = { category = option; expanded = false }
+                                text = { Text(t(option.name)) },
+                                leadingIcon = { Icon(HotlineIcon.fromKey(option.icon).vector(), contentDescription = null) },
+                                onClick = { categoryId = option.id; expanded = false }
                             )
                         }
                     }
@@ -356,31 +432,25 @@ private fun HotlineEditDialog(
         confirmButton = {
             TextButton(
                 enabled = !isSaving,
-                onClick = {
-                    onSave(EmergencyContactInput(name, category, phone, note, order.toIntOrNull() ?: 100))
-                }
+                onClick = { onSave(EmergencyContactInput(name, categoryId, phone, note, order.toIntOrNull() ?: 100)) }
             ) { Text(t(if (isSaving) "Saving…" else "Save")) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(t("Cancel")) } }
     )
 }
 
-private fun ContactCategory.icon(): ImageVector = when (this) {
-    ContactCategory.EMERGENCY -> Icons.Filled.Warning
-    ContactCategory.FIRE -> Icons.Filled.LocalFireDepartment
-    ContactCategory.POLICE -> Icons.Filled.LocalPolice
-    ContactCategory.MEDICAL -> Icons.Filled.LocalHospital
-    ContactCategory.DISASTER -> Icons.Filled.Flood
-    ContactCategory.UTILITY -> Icons.Filled.Power
-    ContactCategory.OTHER -> Icons.Filled.Phone
-}
-
-/** Opens the dialer with the number filled in (no CALL_PHONE permission needed). */
+/** Opens the dialer with the number filled in; the user still presses the call button there. */
 private fun dial(context: Context, phone: String) {
     val number = phone.filter { it.isDigit() || it == '+' }
     try {
         context.startActivity(Intent(Intent.ACTION_DIAL, "tel:$number".toUri()))
     } catch (_: ActivityNotFoundException) {
-        // No dialer (e.g. some tablets); nothing to do.
+        // No dialer (e.g. some tablets); copying the number still works.
     }
+}
+
+private fun copyNumber(context: Context, phone: String, toast: String) {
+    context.getSystemService(ClipboardManager::class.java)
+        ?.setPrimaryClip(ClipData.newPlainText("Phone number", phone))
+    Toast.makeText(context, toast, Toast.LENGTH_SHORT).show()
 }

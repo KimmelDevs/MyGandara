@@ -14,6 +14,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +38,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.pikacheat.mygandara.ui.viewmodel.AuthFormState
 
@@ -43,7 +46,7 @@ import com.pikacheat.mygandara.ui.viewmodel.AuthFormState
 @Composable
 fun SignUpScreen(
     state: AuthFormState,
-    onSignUp: (fullName: String, email: String, password: String, acceptedPrivacy: Boolean) -> Unit,
+    onSignUp: (fullName: String, email: String, password: String, confirmPassword: String, acceptedPrivacy: Boolean) -> Unit,
     onOpenPrivacyNotice: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -51,6 +54,9 @@ fun SignUpScreen(
     var fullName by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+    var showPassword by rememberSaveable { mutableStateOf(false) }
+    val mismatch = confirmPassword.isNotEmpty() && confirmPassword != password
     var acceptedPrivacy by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -99,7 +105,24 @@ fun SignUpScreen(
                 onValueChange = { password = it },
                 label = { Text(t("Password (at least 8 characters)")) },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = { PasswordVisibilityToggle(showPassword) { showPassword = !showPassword } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text(t("Confirm password")) },
+                singleLine = true,
+                isError = mismatch,
+                supportingText = if (mismatch) {
+                    { Text(t("Passwords don't match.")) }
+                } else {
+                    null
+                },
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = { PasswordVisibilityToggle(showPassword) { showPassword = !showPassword } },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -115,7 +138,7 @@ fun SignUpScreen(
             FormMessages(state)
 
             Button(
-                onClick = { onSignUp(fullName, email, password, acceptedPrivacy) },
+                onClick = { onSignUp(fullName, email, password, confirmPassword, acceptedPrivacy) },
                 enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -126,5 +149,16 @@ fun SignUpScreen(
                 }
             }
         }
+    }
+}
+
+/** Eye icon that shows or hides the password text. */
+@Composable
+internal fun PasswordVisibilityToggle(visible: Boolean, onToggle: () -> Unit) {
+    IconButton(onClick = onToggle) {
+        Icon(
+            if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+            contentDescription = t(if (visible) "Hide password" else "Show password")
+        )
     }
 }

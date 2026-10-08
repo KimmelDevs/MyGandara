@@ -32,12 +32,13 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         submit { authRepository.signIn(trimmedEmail, password) }
     }
 
-    fun signUp(fullName: String, email: String, password: String, acceptedPrivacy: Boolean) {
+    fun signUp(fullName: String, email: String, password: String, confirmPassword: String, acceptedPrivacy: Boolean) {
         val trimmedEmail = email.trim()
         when {
             fullName.isBlank() -> return showError("Enter your full name.")
             !Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches() -> return showError("Enter a valid email address.")
             password.length < 8 -> return showError("Password must be at least 8 characters.")
+            password != confirmPassword -> return showError("Passwords don't match.")
             !acceptedPrivacy -> return showError("Please read and accept the privacy notice.")
         }
         submit {
