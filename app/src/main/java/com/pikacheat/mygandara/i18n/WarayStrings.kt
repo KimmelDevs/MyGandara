@@ -304,6 +304,18 @@ val WarayStrings: Map<String, String> = mapOf(
     "Sad" to "Kasubo",
     "Angry" to "Kasina",
 
+    // Search & filters
+    "Search" to "Bilnga",
+    "Close search" to "Sirad-i an pagbiling",
+    "Filters" to "Mga filter",
+    "Remove filter" to "Kuhaa an filter",
+    "Clear all" to "Kuhaa ngatanan",
+    "Only reports assigned to me" to "An mga report la nga gintoka ha akon",
+    "Reset" to "I-reset",
+    "Done" to "Human na",
+    "Date" to "Petsa",
+    "Status" to "Status",
+
     // Appearance
     "Appearance" to "Itsura",
     "System" to "Sundon an telepono",

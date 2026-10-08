@@ -42,7 +42,7 @@ import com.pikacheat.mygandara.data.model.PostDto
 import com.pikacheat.mygandara.data.model.PostType
 import com.pikacheat.mygandara.ui.components.ConfirmDialog
 import com.pikacheat.mygandara.ui.components.EmptyListText
-import com.pikacheat.mygandara.ui.components.SearchField
+import com.pikacheat.mygandara.ui.components.SearchTopBar
 import com.pikacheat.mygandara.ui.components.SkeletonList
 import com.pikacheat.mygandara.ui.components.ImageGalleryDialog
 import com.pikacheat.mygandara.ui.components.PostCard
@@ -83,7 +83,14 @@ fun BulletinScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text(t("Gandara bulletin")) }) },
+        topBar = {
+            SearchTopBar(
+                title = "Gandara bulletin",
+                query = query,
+                onQueryChange = viewModel::setQuery,
+                searchPlaceholder = "Search announcements"
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (canPost) {
@@ -108,10 +115,6 @@ fun BulletinScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp)
             ) {
-                // Search (#12)
-                item {
-                    SearchField(query = query, onQueryChange = viewModel::setQuery, placeholder = t("Search announcements"))
-                }
                 item {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {

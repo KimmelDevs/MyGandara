@@ -1,6 +1,6 @@
 package com.pikacheat.mygandara.ui.screens.staff
 
-import com.pikacheat.mygandara.i18n.t
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,28 +10,39 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pikacheat.mygandara.data.model.ReportStatus
-import com.pikacheat.mygandara.ui.components.ChoiceChipRow
+import com.pikacheat.mygandara.i18n.t
 import com.pikacheat.mygandara.ui.components.RefreshOnResume
+import com.pikacheat.mygandara.ui.components.SearchTopBar
 import com.pikacheat.mygandara.ui.components.SkeletonList
 import com.pikacheat.mygandara.ui.components.UiStateContent
+import com.pikacheat.mygandara.ui.screens.report.FilterButton
+import com.pikacheat.mygandara.ui.screens.report.ReportFilterSheet
 import com.pikacheat.mygandara.ui.screens.report.ReportListContent
-import com.pikacheat.mygandara.ui.screens.report.SortMenuButton
 import com.pikacheat.mygandara.ui.viewmodel.ReportListViewModel
-import com.pikacheat.mygandara.ui.viewmodel.dashboardStats
 
+/**
+ * Opens with just three stat tiles and the list. The tiles double as the status filter;
+ * search is behind the top-bar icon and everything else is in the Filters sheet.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -45,16 +56,21 @@ fun DashboardScreen(
     val state by viewModel.reports.state.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.reports.isRefreshing.collectAsStateWithLifecycle()
     val filters by viewModel.filters.collectAsStateWithLifecycle()
+    var showFilters by remember { mutableStateOf(false) }
 
     RefreshOnResume { viewModel.reports.refreshIfLoaded() }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = { Text(t("LGU dashboard")) },
-                actions = { SortMenuButton(filters.sort) { s -> viewModel.updateFilters { it.copy(sort = s) } } }
-            )
+            SearchTopBar(
+                title = "LGU dashboard",
+                query = filters.query,
+                onQueryChange = { q -> viewModel.updateFilters { it.copy(query = q) } },
+                searchPlaceholder = "Search title, place, or reference no."
+            ) {
+                FilterButton(filters) { showFilters = true }
+            }
         }
     ) { innerPadding ->
         UiStateContent(
@@ -72,52 +88,67 @@ fun DashboardScreen(
                 emptyText = "No reports here."
             ) { all ->
                 item(key = "stats") {
-                    val stats = all.dashboardStats()
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        StatCard(t("Pending"), stats.pending, Modifier.weight(1f))
-                        StatCard(t("In progress"), stats.inProgress, Modifier.weight(1f))
-                        StatCard(t("Resolved (7 days)"), stats.resolvedThisWeek, Modifier.weight(1f))
+                    val counts = all.groupingBy { it.status }.eachCount()
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf(ReportStatus.PENDING, ReportStatus.IN_PROGRESS, ReportStatus.RESOLVED).forEach { status ->
+                            StatTile(
+                                label = status.label,
+                                value = counts[status] ?: 0,
+                                selected = filters.status == status,
+                                onClick = {
+                                    viewModel.updateFilters { it.copy(status = if (it.status == status) null else status) }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
-                }
-                item(key = "status") {
-                    ChoiceChipRow(
-                        options = ReportStatus.entries,
-                        selected = filters.status,
-                        label = { it.label },
-                        onSelect = { s -> viewModel.updateFilters { it.copy(status = s) } },
-                        allLabel = t("All statuses")
-                    )
-                }
-                // "My assigned" filter (#21)
-                item(key = "assigned") {
-                    FilterChip(
-                        selected = filters.assignedToMe,
-                        onClick = { viewModel.updateFilters { it.copy(assignedToMe = !it.assignedToMe) } },
-                        label = { Text(t("Assigned to me")) }
-                    )
                 }
             }
         }
     }
+
+    if (showFilters) {
+        ReportFilterSheet(
+            filters = filters,
+            onChange = viewModel::updateFilters,
+            showStaffOptions = true,
+            onDismiss = { showFilters = false }
+        )
+    }
 }
 
+/** Count tile that toggles the status filter; outlined when selected. */
 @Composable
-private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
+private fun StatTile(
+    label: String,
+    value: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        onClick = onClick,
+        modifier = modifier.semantics {
+            this.selected = selected
+            role = Role.Tab
+        },
+        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+        )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
             Text(
                 text = value.toString(),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = t(label),
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

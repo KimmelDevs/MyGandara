@@ -1,34 +1,47 @@
 package com.pikacheat.mygandara.ui.screens.report
 
-import com.pikacheat.mygandara.i18n.t
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pikacheat.mygandara.data.model.ReportCategory
 import com.pikacheat.mygandara.data.model.ReportDto
+import com.pikacheat.mygandara.data.model.ReportStatus
+import com.pikacheat.mygandara.i18n.t
 import com.pikacheat.mygandara.ui.components.ChoiceChipRow
 import com.pikacheat.mygandara.ui.components.EmptyListText
 import com.pikacheat.mygandara.ui.components.ListSectionHeader
 import com.pikacheat.mygandara.ui.components.ReportCard
-import com.pikacheat.mygandara.ui.components.SearchField
 import com.pikacheat.mygandara.ui.viewmodel.DateRange
 import com.pikacheat.mygandara.ui.viewmodel.ReportFilters
 import com.pikacheat.mygandara.ui.viewmodel.ReportListData
@@ -37,34 +50,32 @@ import com.pikacheat.mygandara.ui.viewmodel.ReportSort
 import com.pikacheat.mygandara.ui.viewmodel.label
 import com.pikacheat.mygandara.util.Dates
 
-/** Top-bar sort button (#7). */
+/**
+ * How many sheet filters differ from the defaults (badge on the Filters icon).
+ * Search lives in the top bar and status in the stat tiles / count chips, so neither is counted here.
+ */
+fun ReportFilters.activeCount(): Int = listOf(
+    dateRange != DateRange.ALL,
+    category != null,
+    assignedToMe,
+    sort != ReportSort.NEWEST
+).count { it }
+
+/** Top-bar Filters icon with a count badge. */
 @Composable
-fun SortMenuButton(sort: ReportSort, onSortChange: (ReportSort) -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { open = true }) {
-            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = t("Sort"))
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            ReportSort.entries.forEach { option ->
-                DropdownMenuItem(
-                    text = { androidx.compose.material3.Text(t(option.label)) },
-                    leadingIcon = {
-                        if (option == sort) Icon(Icons.Filled.Check, contentDescription = null)
-                    },
-                    onClick = {
-                        onSortChange(option)
-                        open = false
-                    }
-                )
-            }
+fun FilterButton(filters: ReportFilters, onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        val count = filters.activeCount()
+        BadgedBox(badge = { if (count > 0) Badge { Text(count.toString()) } }) {
+            Icon(Icons.Filled.FilterList, contentDescription = t("Filters"))
         }
     }
 }
 
 /**
- * Search, date-range and category filters, then the reports grouped under Today / Yesterday / ... headers.
- * [header] adds screen-specific rows (status counts, stat cards, staff chips) above the filters.
+ * The reports list: optional [header] (stat tiles / status counts), a single row of the filters currently on
+ * (each removable), then the reports grouped under Today / Yesterday / ... headers.
+ * Everything else lives in [ReportFilterSheet] so the screen opens uncluttered.
  */
 @Composable
 fun ReportListContent(
@@ -85,30 +96,10 @@ fun ReportListContent(
     ) {
         header(data.reports)
 
-        item(key = "search") {
-            SearchField(
-                query = filters.query,
-                onQueryChange = { q -> viewModel.updateFilters { it.copy(query = q) } },
-                placeholder = t("Search title, place, or reference no.")
-            )
-        }
-        item(key = "dateRange") {
-            ChoiceChipRow(
-                options = DateRange.entries,
-                selected = filters.dateRange,
-                label = { it.label },
-                onSelect = { range -> viewModel.updateFilters { it.copy(dateRange = range ?: DateRange.ALL) } },
-                allLabel = null
-            )
-        }
-        item(key = "category") {
-            ChoiceChipRow(
-                options = ReportCategory.entries,
-                selected = filters.category,
-                label = { it.label },
-                onSelect = { cat -> viewModel.updateFilters { it.copy(category = cat) } },
-                allLabel = t("All categories")
-            )
+        if (filters.activeCount() > 0) {
+            item(key = "activeFilters") {
+                ActiveFilterChips(filters = filters, onChange = viewModel::updateFilters)
+            }
         }
 
         if (visible.isEmpty()) {
@@ -130,4 +121,114 @@ fun ReportListContent(
                 }
             }
     }
+}
+
+/** One removable chip per active filter, plus "Clear all". */
+@Composable
+private fun ActiveFilterChips(filters: ReportFilters, onChange: ((ReportFilters) -> ReportFilters) -> Unit) {
+    data class Active(val label: String, val clear: (ReportFilters) -> ReportFilters)
+
+    val active = buildList {
+        if (filters.dateRange != DateRange.ALL) add(Active(t(filters.dateRange.label)) { f -> f.copy(dateRange = DateRange.ALL) })
+        filters.category?.let { add(Active(t(it.label)) { f -> f.copy(category = null) }) }
+        if (filters.assignedToMe) add(Active(t("Assigned to me")) { f -> f.copy(assignedToMe = false) })
+        if (filters.sort != ReportSort.NEWEST) add(Active(t(filters.sort.label)) { f -> f.copy(sort = ReportSort.NEWEST) })
+    }
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        items(active) { chip ->
+            InputChip(
+                selected = true,
+                onClick = { onChange(chip.clear) },
+                label = { Text(chip.label) },
+                trailingIcon = { Icon(Icons.Filled.Close, contentDescription = t("Remove filter"), modifier = Modifier.size(16.dp)) }
+            )
+        }
+        if (active.size > 1) {
+            item {
+                TextButton(onClick = { onChange { f -> ReportFilters(query = f.query, status = f.status) } }) { Text(t("Clear all")) }
+            }
+        }
+    }
+}
+
+/** Bottom sheet with every filter and the sort order. [showStaffOptions] adds "Assigned to me". */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ReportFilterSheet(
+    filters: ReportFilters,
+    onChange: ((ReportFilters) -> ReportFilters) -> Unit,
+    showStaffOptions: Boolean,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(t("Filters"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+
+            SheetSection("Sort") {
+                ChoiceChipRow(
+                    options = ReportSort.entries,
+                    selected = filters.sort,
+                    label = { it.label },
+                    onSelect = { s -> onChange { it.copy(sort = s ?: ReportSort.NEWEST) } },
+                    allLabel = null
+                )
+            }
+            SheetSection("Date") {
+                ChoiceChipRow(
+                    options = DateRange.entries,
+                    selected = filters.dateRange,
+                    label = { it.label },
+                    onSelect = { d -> onChange { it.copy(dateRange = d ?: DateRange.ALL) } },
+                    allLabel = null
+                )
+            }
+            SheetSection("Category") {
+                ChoiceChipRow(
+                    options = ReportCategory.entries,
+                    selected = filters.category,
+                    label = { it.label },
+                    onSelect = { c -> onChange { it.copy(category = c) } },
+                    allLabel = "All categories"
+                )
+            }
+            if (showStaffOptions) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(t("Only reports assigned to me"), modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = filters.assignedToMe,
+                        onCheckedChange = { on -> onChange { it.copy(assignedToMe = on) } }
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                TextButton(
+                    onClick = { onChange { f -> ReportFilters(query = f.query, status = f.status) } },
+                    modifier = Modifier.weight(1f)
+                ) { Text(t("Reset")) }
+                Button(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(t("Done")) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetSection(title: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(t(title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        content()
+    }
+}
+
+/** Small tappable status counter, used as the status filter on My reports. */
+@Composable
+fun StatusCountChip(count: Int, status: ReportStatus, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text("$count ${t(status.label)}") }
+    )
 }

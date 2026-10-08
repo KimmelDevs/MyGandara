@@ -301,6 +301,18 @@ val FilipinoStrings: Map<String, String> = mapOf(
     "Sad" to "Malungkot",
     "Angry" to "Galit",
 
+    // Search & filters
+    "Search" to "Maghanap",
+    "Close search" to "Isara ang paghahanap",
+    "Filters" to "Mga filter",
+    "Remove filter" to "Alisin ang filter",
+    "Clear all" to "Alisin lahat",
+    "Only reports assigned to me" to "Mga ulat lang na nakatoka sa akin",
+    "Reset" to "I-reset",
+    "Done" to "Tapos",
+    "Date" to "Petsa",
+    "Status" to "Status",
+
     // Appearance
     "Appearance" to "Itsura",
     "System" to "Sundin ang telepono",

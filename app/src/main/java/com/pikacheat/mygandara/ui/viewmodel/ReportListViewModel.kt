@@ -111,14 +111,6 @@ class ReportListViewModel(
     }
 }
 
-data class DashboardStats(val pending: Int, val inProgress: Int, val resolvedThisWeek: Int)
-
-fun List<ReportDto>.dashboardStats(): DashboardStats = DashboardStats(
-    pending = count { it.status == ReportStatus.PENDING },
-    inProgress = count { it.status == ReportStatus.IN_PROGRESS },
-    resolvedThisWeek = count { it.status == ReportStatus.RESOLVED && Dates.isWithinDays(it.updatedAt, 7) }
-)
-
 fun Dates.Bucket.label(): String = when (this) {
     Dates.Bucket.TODAY -> "Today"
     Dates.Bucket.YESTERDAY -> "Yesterday"
