@@ -1,12 +1,50 @@
 package com.pikacheat.mygandara.navigation
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.pikacheat.mygandara.data.model.UserRole
+
 sealed class Screen(val route: String) {
-    data object Home : Screen("home")
+    // Signed out
+    data object Login : Screen("login")
+    data object SignUp : Screen("sign_up")
+
+    // Signed in
+    data object Bulletin : Screen("bulletin")
+    data object MyReports : Screen("my_reports")
+    data object Dashboard : Screen("dashboard")
+    data object Users : Screen("users")
+    data object Profile : Screen("profile")
     data object CreateReport : Screen("create_report")
-    data object AdminDashboard : Screen("admin_dashboard")
+    data object CreatePost : Screen("create_post")
+
+    // Both
+    data object PrivacyNotice : Screen("privacy_notice")
 
     data object ReportDetail : Screen("report_detail/{reportId}") {
         const val ARG_REPORT_ID = "reportId"
         fun createRoute(reportId: String) = "report_detail/$reportId"
+    }
+}
+
+/** Bottom navigation tabs. Which ones a user sees depends on their role. */
+enum class Tab(val screen: Screen, val label: String, val icon: ImageVector) {
+    BULLETIN(Screen.Bulletin, "Bulletin", Icons.Filled.Campaign),
+    MY_REPORTS(Screen.MyReports, "My reports", Icons.Filled.Assignment),
+    DASHBOARD(Screen.Dashboard, "Reports", Icons.Filled.Dashboard),
+    USERS(Screen.Users, "Users", Icons.Filled.Group),
+    PROFILE(Screen.Profile, "Profile", Icons.Filled.Person);
+
+    companion object {
+        fun forRole(role: UserRole): List<Tab> = when (role) {
+            UserRole.CITIZEN -> listOf(BULLETIN, MY_REPORTS, PROFILE)
+            UserRole.STAFF -> listOf(DASHBOARD, BULLETIN, PROFILE)
+            UserRole.ADMIN -> listOf(DASHBOARD, BULLETIN, USERS, PROFILE)
+        }
     }
 }

@@ -4,7 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.pikacheat.mygandara.navigation.MyGandaraNavGraph
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import com.pikacheat.mygandara.navigation.MyGandaraRoot
 import com.pikacheat.mygandara.ui.theme.MyGandaraTheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +16,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyGandaraTheme {
-                MyGandaraNavGraph()
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    MyGandaraRoot()
+                }
             }
         }
     }

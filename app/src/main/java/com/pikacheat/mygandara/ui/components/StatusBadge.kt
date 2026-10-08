@@ -11,24 +11,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pikacheat.mygandara.data.model.ReportStatus
 
 private data class StatusColors(val container: Color, val content: Color)
 
 @Composable
-private fun colorsForStatus(status: String): StatusColors = when (status) {
-    "Pending" -> StatusColors(
+private fun colorsForStatus(status: ReportStatus): StatusColors = when (status) {
+    ReportStatus.PENDING -> StatusColors(
         container = MaterialTheme.colorScheme.errorContainer,
         content = MaterialTheme.colorScheme.onErrorContainer
     )
-    "In progress" -> StatusColors(
+    ReportStatus.IN_PROGRESS -> StatusColors(
         container = MaterialTheme.colorScheme.tertiaryContainer,
         content = MaterialTheme.colorScheme.onTertiaryContainer
     )
-    "Resolved" -> StatusColors(
+    ReportStatus.RESOLVED -> StatusColors(
         container = MaterialTheme.colorScheme.primaryContainer,
         content = MaterialTheme.colorScheme.onPrimaryContainer
     )
-    else -> StatusColors(
+    ReportStatus.REJECTED -> StatusColors(
         container = MaterialTheme.colorScheme.surfaceVariant,
         content = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -36,7 +37,7 @@ private fun colorsForStatus(status: String): StatusColors = when (status) {
 
 @Composable
 fun StatusBadge(
-    status: String,
+    status: ReportStatus,
     modifier: Modifier = Modifier
 ) {
     val colors = colorsForStatus(status)
@@ -46,11 +47,33 @@ fun StatusBadge(
         colors = CardDefaults.cardColors(containerColor = colors.container)
     ) {
         Text(
-            text = status,
+            text = status.label,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
             color = colors.content,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+        )
+    }
+}
+
+@Composable
+fun PillBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.tertiaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onTertiaryContainer
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            color = contentColor,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
         )
     }
 }
