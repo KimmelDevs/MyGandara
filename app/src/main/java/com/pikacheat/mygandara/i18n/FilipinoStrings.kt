@@ -1,0 +1,275 @@
+package com.pikacheat.mygandara.i18n
+
+/** English -> Filipino. Keep %s / %1$s placeholders exactly as in the English key. */
+val FilipinoStrings: Map<String, String> = mapOf(
+    // Navigation & common
+    "Bulletin" to "Anunsyo",
+    "Reports" to "Mga ulat",
+    "My reports" to "Aking mga ulat",
+    "Users" to "Mga user",
+    "Profile" to "Profile",
+    "Back" to "Bumalik",
+    "Close" to "Isara",
+    "Cancel" to "Kanselahin",
+    "Confirm" to "Kumpirmahin",
+    "Delete" to "Burahin",
+    "Discard" to "Itapon",
+    "Keep editing" to "Ituloy ang pag-edit",
+    "Edit" to "I-edit",
+    "Send" to "Ipadala",
+    "Save" to "I-save",
+    "Saving…" to "Sine-save…",
+    "Try again" to "Subukan ulit",
+    "All" to "Lahat",
+    "Sort" to "Ayusin",
+    "Clear search" to "Burahin ang hinahanap",
+    "No internet connection. Showing saved data." to "Walang internet. Ipinapakita ang naka-save na datos.",
+    "Language" to "Wika",
+
+    // Auth
+    "Official seal of Gandara, Samar" to "Opisyal na sagisag ng Gandara, Samar",
+    "Report problems and get updates from the Municipality of Gandara." to
+        "Mag-ulat ng problema at makatanggap ng balita mula sa Munisipyo ng Gandara.",
+    "Email" to "Email",
+    "Password" to "Password",
+    "Sign in" to "Mag-sign in",
+    "No account yet? Sign up" to "Wala pang account? Mag-sign up",
+    "Create account" to "Gumawa ng account",
+    "Full name" to "Buong pangalan",
+    "Password (at least 8 characters)" to "Password (hindi bababa sa 8 karakter)",
+    "I have read and agree to the" to "Nabasa ko at sumasang-ayon ako sa",
+    "Privacy notice" to "Abiso sa privacy",
+    "Sign up" to "Mag-sign up",
+    "Enter a valid email address." to "Maglagay ng tamang email address.",
+    "Enter your password." to "Ilagay ang iyong password.",
+    "Enter your full name." to "Ilagay ang iyong buong pangalan.",
+    "Password must be at least 8 characters." to "Dapat hindi bababa sa 8 karakter ang password.",
+    "Please read and accept the privacy notice." to "Pakibasa at tanggapin ang abiso sa privacy.",
+
+    // Bulletin
+    "Gandara bulletin" to "Anunsyo ng Gandara",
+    "New post" to "Bagong post",
+    "Search announcements" to "Maghanap ng anunsyo",
+    "No posts yet." to "Wala pang post.",
+    "No posts match your search." to "Walang post na tugma sa hinahanap mo.",
+    "Delete post?" to "Burahin ang post?",
+    "\"%s\" will be removed from the bulletin for everyone." to "Mawawala ang \"%s\" sa anunsyo para sa lahat.",
+    "Share announcement" to "Ibahagi ang anunsyo",
+    "Share post" to "Ibahagi ang post",
+    "Delete post" to "Burahin ang post",
+    "Post deleted" to "Nabura ang post",
+    "Pinned" to "Naka-pin",
+    "New" to "Bago",
+    "EMERGENCY" to "EMERGENCY",
+    "Dismiss emergency alert" to "Isara ang emergency alert",
+    "Attachment for %s. Tap to enlarge." to "Attachment para sa %s. I-tap para palakihin.",
+    "View attachment" to "Tingnan ang attachment",
+    "New bulletin post" to "Bagong anunsyo",
+    "Type" to "Uri",
+    "Emergency posts are highlighted in red at the top of everyone's bulletin when pinned." to
+        "Ang mga emergency post ay naka-pula at nasa itaas ng anunsyo ng lahat kapag naka-pin.",
+    "Title" to "Pamagat",
+    "Message" to "Mensahe",
+    "Pin to top" to "I-pin sa itaas",
+    "Attachment" to "Attachment",
+    "Remove attachment" to "Alisin ang attachment",
+    "Attach image or PDF (optional)" to "Maglakip ng larawan o PDF (opsyonal)",
+    "Posting…" to "Ipinapost…",
+    "Publish" to "I-publish",
+    "Discard this post?" to "Itapon ang post na ito?",
+    "Your draft will be lost." to "Mawawala ang iyong draft.",
+    "Enter a title." to "Maglagay ng pamagat.",
+    "Couldn't read the selected file." to "Hindi mabasa ang napiling file.",
+
+    // Post types
+    "Announcement" to "Anunsyo",
+    "Ordinance" to "Ordinansa",
+    "Event" to "Kaganapan",
+    "Emergency" to "Emergency",
+
+    // Profile
+    "Role: %s" to "Tungkulin: %s",
+    "Mobile number (optional)" to "Numero ng mobile (opsyonal)",
+    "Barangay (optional)" to "Barangay (opsyonal)",
+    "Sign out" to "Mag-sign out",
+    "Sign out?" to "Mag-sign out?",
+    "You'll need your email and password to sign in again." to
+        "Kakailanganin mo ang iyong email at password para makapag-sign in ulit.",
+    "Name can't be empty." to "Hindi puwedeng walang pangalan.",
+    "Profile saved" to "Na-save ang profile",
+    "Your profile could not be found. Please contact the LGU." to
+        "Hindi makita ang iyong profile. Makipag-ugnayan sa LGU.",
+
+    // Roles
+    "Citizen" to "Mamamayan",
+    "Staff" to "Kawani",
+    "Admin" to "Admin",
+
+    // Create report
+    "Report a problem" to "Mag-ulat ng problema",
+    "Category" to "Kategorya",
+    "Choose a category" to "Pumili ng kategorya",
+    "Pothole near barangay hall" to "Lubak malapit sa barangay hall",
+    "Description" to "Paglalarawan",
+    "Describe the issue in detail" to "Ilarawan nang detalyado ang problema",
+    "Photo (optional)" to "Larawan (opsyonal)",
+    "Selected photo" to "Napiling larawan",
+    "Remove photo" to "Alisin ang larawan",
+    "Camera" to "Camera",
+    "Gallery" to "Gallery",
+    "Location" to "Lokasyon",
+    "Remove location" to "Alisin ang lokasyon",
+    "Getting location…" to "Kinukuha ang lokasyon…",
+    "Add my current location" to "Idagdag ang kasalukuyan kong lokasyon",
+    "Barangay / landmark" to "Barangay / palatandaan",
+    "e.g. Brgy. Rizal, near the covered court" to "hal. Brgy. Rizal, malapit sa covered court",
+    "Sending…" to "Ipinapadala…",
+    "Submit report" to "Ipadala ang ulat",
+    "Discard this report?" to "Itapon ang ulat na ito?",
+    "What you've typed and the photo you attached will be lost." to
+        "Mawawala ang iyong isinulat at ang larawang inilakip mo.",
+    "Category: %s" to "Kategorya: %s",
+    "Title: %s" to "Pamagat: %s",
+    "Place: %s" to "Lugar: %s",
+    "Send this report?" to "Ipadala ang ulat na ito?",
+    "Photo: attached" to "Larawan: nakalakip",
+    "Photo: none" to "Larawan: wala",
+    "GPS location: attached" to "GPS na lokasyon: nakalakip",
+    "GPS location: not attached" to "GPS na lokasyon: hindi nakalakip",
+    "Couldn't get your location. Make sure location is turned on." to
+        "Hindi makuha ang iyong lokasyon. Siguraduhing naka-on ang location.",
+    "Choose a category." to "Pumili ng kategorya.",
+    "Give the report a short title." to "Bigyan ng maikling pamagat ang ulat.",
+    "Too many reports in the last hour. Please try again later." to
+        "Masyadong maraming ulat sa nakaraang oras. Subukan ulit mamaya.",
+
+    // Categories
+    "Road and infrastructure" to "Kalsada at imprastraktura",
+    "Garbage collection" to "Pangongolekta ng basura",
+    "Streetlight" to "Ilaw sa kalye",
+    "Peace and order" to "Kapayapaan at kaayusan",
+    "Other" to "Iba pa",
+
+    // Statuses
+    "Pending" to "Nakabinbin",
+    "In progress" to "Inaasikaso",
+    "Resolved" to "Naresolba",
+    "Rejected" to "Tinanggihan",
+    "Cancelled" to "Kinansela",
+
+    // Report lists
+    "You haven't reported anything yet.\nTap \"Report a problem\" to send one to the LGU." to
+        "Wala ka pang naiuulat.\nI-tap ang \"Mag-ulat ng problema\" para magpadala sa LGU.",
+    "No reports match these filters." to "Walang ulat na tugma sa mga filter na ito.",
+    "No reports here." to "Walang ulat dito.",
+    "Search title, place, or reference no." to "Maghanap ng pamagat, lugar, o reference no.",
+    "All categories" to "Lahat ng kategorya",
+    "All statuses" to "Lahat ng status",
+    "Updated" to "May bago",
+    "Last 7 days" to "Nakaraang 7 araw",
+    "Last 30 days" to "Nakaraang 30 araw",
+    "All time" to "Lahat ng panahon",
+    "Newest first" to "Pinakabago muna",
+    "Oldest first" to "Pinakaluma muna",
+    "Recently updated" to "Kamakailang na-update",
+    "Today" to "Ngayong araw",
+    "Yesterday" to "Kahapon",
+    "This week" to "Ngayong linggo",
+    "Earlier" to "Mas maaga",
+
+    // Dashboard
+    "LGU dashboard" to "Dashboard ng LGU",
+    "Resolved (7 days)" to "Naresolba (7 araw)",
+    "Assigned to me" to "Nakatoka sa akin",
+
+    // Report detail
+    "Report details" to "Detalye ng ulat",
+    "Photo of the reported problem. Tap to enlarge." to "Larawan ng iniulat na problema. I-tap para palakihin.",
+    "View full photo" to "Tingnan ang buong larawan",
+    "Submitted %s" to "Ipinadala noong %s",
+    "Reference no." to "Reference no.",
+    "Copy reference number" to "Kopyahin ang reference number",
+    "Copied %s" to "Nakopya ang %s",
+    "Reported by" to "Iniulat ni",
+    "Mobile" to "Mobile",
+    "Assigned to" to "Nakatoka kay",
+    "Nobody yet" to "Wala pa",
+    "You" to "Ikaw",
+    "Another staff member" to "Ibang kawani",
+    "Open location in maps" to "Buksan ang lokasyon sa mapa",
+    "Cancel this report" to "Kanselahin ang ulat na ito",
+    "Cancel this report?" to "Kanselahin ang ulat na ito?",
+    "The LGU will stop working on \"%s\". You can't undo this." to
+        "Ititigil ng LGU ang pag-aasikaso sa \"%s\". Hindi na ito maibabalik.",
+    "Cancel report" to "Kanselahin ang ulat",
+    "Keep it" to "Huwag kanselahin",
+    "Status timeline" to "Kasaysayan ng status",
+    "Note" to "Tala",
+    "Staff actions" to "Aksyon ng kawani",
+    "Note to the reporter (optional)" to "Tala para sa nag-ulat (opsyonal)",
+    "e.g. Crew scheduled for Monday" to "hal. Darating ang crew sa Lunes",
+    "Start" to "Simulan",
+    "Resolve" to "Iresolba",
+    "Reject" to "Tanggihan",
+    "Keep as %s" to "Panatilihing %s",
+    "Other status" to "Ibang status",
+    "Unassign me" to "Alisin ako",
+    "Assign to me" to "Itoka sa akin",
+    "Post note only" to "Tala lang ang i-post",
+    "Post update" to "I-post ang update",
+    "Report not found" to "Hindi makita ang ulat",
+    "Choose a status or write a note." to "Pumili ng status o magsulat ng tala.",
+    "Status updated" to "Na-update ang status",
+    "Note added" to "Naidagdag ang tala",
+    "Assigned to you" to "Naitoka sa iyo",
+    "Unassigned" to "Inalis ang pagkakatoka",
+    "Report cancelled" to "Nakansela ang ulat",
+    "Only your own pending reports can be cancelled" to
+        "Ang sarili mong nakabinbing ulat lang ang puwedeng kanselahin",
+
+    // Users
+    "Search name, email, barangay" to "Maghanap ng pangalan, email, barangay",
+    "Everyone (%d)" to "Lahat (%d)",
+    "No users found." to "Walang nahanap na user.",
+    "Change role?" to "Palitan ang tungkulin?",
+    "Make %1\$s %2\$s?" to "Gawing %2\$s si %1\$s?",
+    "Make %s" to "Gawing %s",
+    "%s (you)" to "%s (ikaw)",
+    "Role updated" to "Na-update ang tungkulin",
+    "They will lose access to all reports and staff tools." to
+        "Mawawalan siya ng access sa lahat ng ulat at gamit ng kawani.",
+    "They will see every report, reporters' contact details, and can update report status." to
+        "Makikita niya ang lahat ng ulat at contact ng mga nag-ulat, at puwede niyang i-update ang status.",
+    "They will also be able to post to the bulletin and change other users' roles." to
+        "Makakapag-post din siya sa anunsyo at makakapagpalit ng tungkulin ng ibang user.",
+    "Only admins can change roles" to "Admin lang ang puwedeng magpalit ng tungkulin",
+    "Admins cannot change their own role" to "Hindi puwedeng palitan ng admin ang sarili niyang tungkulin",
+
+    // Errors
+    "Can't reach the server. Check your internet connection." to
+        "Hindi maabot ang server. Tingnan ang iyong internet connection.",
+    "Request failed" to "Hindi natuloy ang request",
+    "Something went wrong" to "May nangyaring mali",
+
+    // Privacy notice
+    "Who we are" to "Sino kami",
+    "MyGandara is operated by the Local Government Unit of Gandara, Samar. We process your personal information in line with the Data Privacy Act of 2012 (Republic Act No. 10173)." to
+        "Ang MyGandara ay pinapatakbo ng Pamahalaang Lokal ng Gandara, Samar. Pinoproseso namin ang iyong personal na impormasyon alinsunod sa Data Privacy Act of 2012 (Republic Act No. 10173).",
+    "What we collect" to "Ano ang kinokolekta namin",
+    "• Account details: your name, email address, and (if you add them) phone number and barangay.\n• Reports you submit: title, description, category, photo, and the GPS location you attach.\n• Technical data needed to keep you signed in." to
+        "• Detalye ng account: iyong pangalan, email address, at (kung idinagdag mo) numero ng telepono at barangay.\n• Mga ulat na ipinapadala mo: pamagat, paglalarawan, kategorya, larawan, at GPS na lokasyong inilakip mo.\n• Teknikal na datos na kailangan para manatili kang naka-sign in.",
+    "Why we collect it" to "Bakit namin ito kinokolekta",
+    "To receive, act on, and update you about the problems you report, to contact you if we need more details, and to publish public announcements. We do not use your data for advertising and we do not sell it." to
+        "Para matanggap, maaksyunan, at ma-update ka tungkol sa mga problemang iniuulat mo, para makontak ka kung kailangan namin ng karagdagang detalye, at para maglathala ng mga pampublikong anunsyo. Hindi namin ginagamit ang iyong datos sa advertising at hindi namin ito ibinebenta.",
+    "Who can see it" to "Sino ang makakakita nito",
+    "Your reports, photos, and location are visible only to you and to authorized LGU staff. Staff can also see your name, email, phone, and barangay so they can follow up. Bulletin posts are public. Data is stored with our hosting provider, Supabase, under access rules that enforce these limits." to
+        "Ikaw lang at ang mga awtorisadong kawani ng LGU ang makakakita ng iyong mga ulat, larawan, at lokasyon. Makikita rin ng mga kawani ang iyong pangalan, email, telepono, at barangay para makapag-follow up sila. Pampubliko ang mga post sa anunsyo. Nakaimbak ang datos sa aming hosting provider, ang Supabase, sa ilalim ng mga patakarang nagpapatupad ng mga limitasyong ito.",
+    "How long we keep it" to "Gaano katagal namin ito iniingatan",
+    "Reports are kept for as long as needed to resolve them and for the LGU's record-keeping obligations. You may ask us to delete your account and personal data at any time." to
+        "Iniingatan ang mga ulat hangga't kailangan para maresolba ang mga ito at para sa mga obligasyon ng LGU sa pagtatala. Maaari mong hilingin anumang oras na burahin namin ang iyong account at personal na datos.",
+    "Your rights" to "Ang iyong mga karapatan",
+    "You have the right to be informed, to access, to correct, to object, to erasure or blocking, to data portability, and to file a complaint with the National Privacy Commission (privacy.gov.ph)." to
+        "May karapatan kang malaman, ma-access, maitama, tumutol, ipabura o ipa-block, sa data portability, at magsampa ng reklamo sa National Privacy Commission (privacy.gov.ph).",
+    "Contact" to "Makipag-ugnayan",
+    "For privacy questions or requests, contact: %s" to "Para sa mga tanong o kahilingan tungkol sa privacy, makipag-ugnayan kay: %s"
+)
