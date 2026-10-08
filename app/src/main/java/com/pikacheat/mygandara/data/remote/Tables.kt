@@ -5,6 +5,7 @@ object Tables {
     const val REPORTS = "reports"
     const val REPORT_UPDATES = "report_updates"
     const val POSTS = "posts"
+    const val EMERGENCY_CONTACTS = "emergency_contacts"
 }
 
 object Buckets {

@@ -4,6 +4,7 @@ import android.content.Context
 import com.pikacheat.mygandara.util.LocalStore
 import com.pikacheat.mygandara.data.remote.SupabaseProvider
 import com.pikacheat.mygandara.data.repository.AuthRepository
+import com.pikacheat.mygandara.data.repository.EmergencyContactRepository
 import com.pikacheat.mygandara.data.repository.PostRepository
 import com.pikacheat.mygandara.data.repository.ProfileRepository
 import com.pikacheat.mygandara.data.repository.RealtimeRepository
@@ -16,5 +17,6 @@ class AppContainer(context: Context) {
     val profileRepository by lazy { ProfileRepository { SupabaseProvider.client } }
     val reportRepository by lazy { ReportRepository { SupabaseProvider.client } }
     val postRepository by lazy { PostRepository { SupabaseProvider.client } }
+    val emergencyContactRepository by lazy { EmergencyContactRepository { SupabaseProvider.client } }
     val realtimeRepository by lazy { RealtimeRepository { SupabaseProvider.client } }
 }

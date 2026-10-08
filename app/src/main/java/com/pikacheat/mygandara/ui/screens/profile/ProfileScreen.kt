@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pikacheat.mygandara.data.model.Profile
 import com.pikacheat.mygandara.ui.components.ConfirmDialog
 import com.pikacheat.mygandara.ui.components.LanguagePicker
+import com.pikacheat.mygandara.ui.components.ThemeModePicker
 import com.pikacheat.mygandara.ui.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,6 +125,9 @@ fun ProfileScreen(
 
             Text(t("Language"), style = MaterialTheme.typography.labelLarge)
             LanguagePicker()
+
+            Text(t("Appearance"), style = MaterialTheme.typography.labelLarge)
+            ThemeModePicker()
 
             TextButton(onClick = onOpenPrivacyNotice) { Text(t("Privacy notice")) }
             OutlinedButton(onClick = { confirmSignOut = true }, modifier = Modifier.fillMaxWidth()) {

@@ -38,6 +38,7 @@ import com.pikacheat.mygandara.ui.screens.auth.LoginScreen
 import com.pikacheat.mygandara.ui.screens.auth.SignUpScreen
 import com.pikacheat.mygandara.ui.screens.bulletin.BulletinScreen
 import com.pikacheat.mygandara.ui.screens.bulletin.CreatePostScreen
+import com.pikacheat.mygandara.ui.screens.hotlines.HotlinesScreen
 import com.pikacheat.mygandara.ui.screens.privacy.PrivacyNoticeScreen
 import com.pikacheat.mygandara.ui.screens.profile.ProfileScreen
 import com.pikacheat.mygandara.ui.screens.report.CreateReportScreen
@@ -98,8 +99,12 @@ private fun SignedOutNavGraph() {
                 onGoToSignUp = {
                     authViewModel.clearMessages()
                     navController.navigate(Screen.SignUp.route)
-                }
+                },
+                onOpenHotlines = { navController.navigate(Screen.Hotlines.route) }
             )
+        }
+        composable(Screen.Hotlines.route) {
+            HotlinesScreen(canEdit = false, onBackClick = { navController.popBackStack() })
         }
         composable(Screen.SignUp.route) {
             SignUpScreen(
@@ -195,6 +200,9 @@ private fun SignedInNavGraph(
             }
             composable(Screen.PrivacyNotice.route) {
                 PrivacyNoticeScreen(onBackClick = { navController.popBackStack() })
+            }
+            composable(Screen.Hotlines.route) {
+                HotlinesScreen(canEdit = isAdmin)
             }
             composable(Screen.CreateReport.route) {
                 CreateReportScreen(

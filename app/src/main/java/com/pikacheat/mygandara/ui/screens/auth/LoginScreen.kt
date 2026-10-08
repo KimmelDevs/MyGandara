@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +46,7 @@ fun LoginScreen(
     state: AuthFormState,
     onSignIn: (email: String, password: String) -> Unit,
     onGoToSignUp: () -> Unit,
+    onOpenHotlines: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var email by rememberSaveable { mutableStateOf("") }
@@ -115,6 +120,13 @@ fun LoginScreen(
             }
             TextButton(onClick = onGoToSignUp, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                 Text(t("No account yet? Sign up"))
+            }
+            OutlinedButton(
+                onClick = onOpenHotlines,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Filled.Call, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Text(t("Emergency hotlines"), modifier = Modifier.padding(start = 8.dp))
             }
         }
     }

@@ -251,6 +251,45 @@ val FilipinoStrings: Map<String, String> = mapOf(
     "Request failed" to "Hindi natuloy ang request",
     "Something went wrong" to "May nangyaring mali",
 
+    // Hotlines
+    "Hotlines" to "Hotline",
+    "Emergency hotlines" to "Mga emergency hotline",
+    "Add hotline" to "Magdagdag ng hotline",
+    "Edit hotline" to "I-edit ang hotline",
+    "Delete hotline?" to "Burahin ang hotline?",
+    "\"%s\" will be removed for everyone." to "Mawawala ang \"%s\" para sa lahat.",
+    "Tap a number to call. These numbers are saved on your phone, so they still show without internet." to
+        "I-tap ang numero para tumawag. Naka-save ang mga numerong ito sa iyong telepono kaya makikita pa rin kahit walang internet.",
+    "Couldn't refresh. Showing the numbers saved on this phone." to
+        "Hindi ma-refresh. Ipinapakita ang mga numerong naka-save sa teleponong ito.",
+    "No hotlines yet. Tap \"Add hotline\" to add the local numbers." to
+        "Wala pang hotline. I-tap ang \"Magdagdag ng hotline\" para idagdag ang mga lokal na numero.",
+    "No hotlines yet." to "Wala pang hotline.",
+    "Call %s" to "Tawagan ang %s",
+    "Name" to "Pangalan",
+    "e.g. BFP Gandara Fire Station" to "hal. BFP Gandara Fire Station",
+    "Phone number" to "Numero ng telepono",
+    "e.g. 0917 123 4567" to "hal. 0917 123 4567",
+    "Note (optional)" to "Tala (opsyonal)",
+    "e.g. 24/7, near the municipal hall" to "hal. 24/7, malapit sa munisipyo",
+    "Order in list (lower shows first)" to "Pagkakasunod sa listahan (mas mababa, mas nauuna)",
+    "Enter a name." to "Maglagay ng pangalan.",
+    "Enter a phone number." to "Maglagay ng numero ng telepono.",
+    "Hotline added" to "Naidagdag ang hotline",
+    "Hotline updated" to "Na-update ang hotline",
+    "Hotline deleted" to "Nabura ang hotline",
+    "Fire" to "Sunog",
+    "Police" to "Pulis",
+    "Hospital / medical" to "Ospital / medikal",
+    "Disaster response" to "Pagtugon sa sakuna",
+    "Water / power" to "Tubig / kuryente",
+
+    // Appearance
+    "Appearance" to "Itsura",
+    "System" to "Sundin ang telepono",
+    "Light" to "Maliwanag",
+    "Dark" to "Madilim",
+
     // Privacy notice
     "Who we are" to "Sino kami",
     "MyGandara is operated by the Local Government Unit of Gandara, Samar. We process your personal information in line with the Data Privacy Act of 2012 (Republic Act No. 10173)." to

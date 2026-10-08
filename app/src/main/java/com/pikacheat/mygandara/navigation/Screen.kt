@@ -2,6 +2,7 @@ package com.pikacheat.mygandara.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Group
@@ -25,6 +26,7 @@ sealed class Screen(val route: String) {
 
     // Both
     data object PrivacyNotice : Screen("privacy_notice")
+    data object Hotlines : Screen("hotlines")
 
     data object ReportDetail : Screen("report_detail/{reportId}") {
         const val ARG_REPORT_ID = "reportId"
@@ -37,14 +39,15 @@ enum class Tab(val screen: Screen, val label: String, val icon: ImageVector) {
     BULLETIN(Screen.Bulletin, "Bulletin", Icons.Filled.Campaign),
     MY_REPORTS(Screen.MyReports, "My reports", Icons.Filled.Assignment),
     DASHBOARD(Screen.Dashboard, "Reports", Icons.Filled.Dashboard),
+    HOTLINES(Screen.Hotlines, "Hotlines", Icons.Filled.Call),
     USERS(Screen.Users, "Users", Icons.Filled.Group),
     PROFILE(Screen.Profile, "Profile", Icons.Filled.Person);
 
     companion object {
         fun forRole(role: UserRole): List<Tab> = when (role) {
-            UserRole.CITIZEN -> listOf(BULLETIN, MY_REPORTS, PROFILE)
-            UserRole.STAFF -> listOf(DASHBOARD, BULLETIN, PROFILE)
-            UserRole.ADMIN -> listOf(DASHBOARD, BULLETIN, USERS, PROFILE)
+            UserRole.CITIZEN -> listOf(BULLETIN, MY_REPORTS, HOTLINES, PROFILE)
+            UserRole.STAFF -> listOf(DASHBOARD, BULLETIN, HOTLINES, PROFILE)
+            UserRole.ADMIN -> listOf(DASHBOARD, BULLETIN, HOTLINES, USERS, PROFILE)
         }
     }
 }
