@@ -1,5 +1,10 @@
 package com.pikacheat.mygandara.ui.screens.bulletin
 
+import com.pikacheat.mygandara.i18n.AppLanguage
+import com.pikacheat.mygandara.i18n.I18n
+import com.pikacheat.mygandara.i18n.LocalLanguage
+import com.pikacheat.mygandara.i18n.t
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,7 +40,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pikacheat.mygandara.data.model.PostDto
 import com.pikacheat.mygandara.data.model.PostType
+import com.pikacheat.mygandara.ui.components.ConfirmDialog
 import com.pikacheat.mygandara.ui.components.EmptyListText
+import com.pikacheat.mygandara.ui.components.SearchField
+import com.pikacheat.mygandara.ui.components.SkeletonList
+import com.pikacheat.mygandara.ui.components.ZoomableImageDialog
 import com.pikacheat.mygandara.ui.components.PostCard
 import com.pikacheat.mygandara.ui.components.RefreshOnResume
 import com.pikacheat.mygandara.ui.components.UiStateContent
@@ -55,11 +64,14 @@ fun BulletinScreen(
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val language = LocalLanguage.current
+    val query by viewModel.query.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<PostDto?>(null) }
+    var viewingImage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(message) {
         message?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(I18n.tr(language, it))
             viewModel.clearMessage()
         }
     }
@@ -68,14 +80,14 @@ fun BulletinScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("Gandara bulletin") }) },
+        topBar = { TopAppBar(title = { Text(t("Gandara bulletin")) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (canPost) {
                 ExtendedFloatingActionButton(
                     onClick = onNewPostClick,
                     icon = { Icon(Icons.Filled.Campaign, contentDescription = null) },
-                    text = { Text("New post") }
+                    text = { Text(t("New post")) }
                 )
             }
         }
@@ -84,34 +96,39 @@ fun BulletinScreen(
             state = state,
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.posts.refresh() },
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            loading = { SkeletonList() }
         ) { posts ->
-            val visible = if (filter == null) posts else posts.filter { it.type == filter }
+            val visible = viewModel.visiblePosts(posts, filter, query)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp)
             ) {
+                // Search (#12)
+                item {
+                    SearchField(query = query, onQueryChange = viewModel::setQuery, placeholder = t("Search announcements"))
+                }
                 item {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
                             FilterChip(
                                 selected = filter == null,
                                 onClick = { viewModel.setFilter(null) },
-                                label = { Text("All") }
+                                label = { Text(t("All")) }
                             )
                         }
                         items(PostType.entries) { type ->
                             FilterChip(
                                 selected = filter == type,
                                 onClick = { viewModel.setFilter(type) },
-                                label = { Text(type.label) }
+                                label = { Text(t(type.label)) }
                             )
                         }
                     }
                 }
                 if (visible.isEmpty()) {
-                    item { EmptyListText("No posts yet.") }
+                    item { EmptyListText(if (posts.isEmpty()) "No posts yet." else "No posts match your search.") }
                 }
                 items(visible, key = { it.id }) { post ->
                     PostCard(
@@ -120,6 +137,8 @@ fun BulletinScreen(
                         onOpenAttachment = { url ->
                             context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
                         },
+                        onViewImage = { url -> viewingImage = url },
+                        onShare = { sharePost(context, post, language) },
                         onDelete = if (canPost) ({ pendingDelete = post }) else null
                     )
                 }
@@ -128,19 +147,34 @@ fun BulletinScreen(
     }
 
     pendingDelete?.let { post ->
-        AlertDialog(
-            onDismissRequest = { pendingDelete = null },
-            title = { Text("Delete post?") },
-            text = { Text("\"${post.title}\" will be removed from the bulletin for everyone.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deletePost(post)
-                    pendingDelete = null
-                }) { Text("Delete") }
+        ConfirmDialog(
+            title = t("Delete post?"),
+            message = t("\"%s\" will be removed from the bulletin for everyone.", post.title),
+            confirmLabel = t("Delete"),
+            destructive = true,
+            onConfirm = {
+                viewModel.deletePost(post)
+                pendingDelete = null
             },
-            dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("Cancel") }
-            }
+            onDismiss = { pendingDelete = null }
         )
     }
+    viewingImage?.let { url ->
+        ZoomableImageDialog(url = url, contentDescription = null, onDismiss = { viewingImage = null })
+    }
+}
+
+/** Share to Messenger, SMS, etc. (#15) */
+private fun sharePost(context: Context, post: PostDto, language: AppLanguage) {
+    val chooserTitle = I18n.tr(language, "Share announcement")
+    val text = buildString {
+        append("[${I18n.tr(language, post.type.label)}] ${post.title}")
+        if (post.body.isNotBlank()) append("\n\n${post.body}")
+        append("\n\n- LGU Gandara, via MyGandara")
+    }
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(send, chooserTitle))
 }

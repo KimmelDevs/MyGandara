@@ -1,8 +1,12 @@
 package com.pikacheat.mygandara.ui.components
 
+import com.pikacheat.mygandara.i18n.t
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -10,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -34,10 +39,13 @@ fun PostCard(
     post: PostDto,
     attachmentUrl: String?,
     onOpenAttachment: (String) -> Unit,
+    onViewImage: (String) -> Unit,
+    onShare: () -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null
 ) {
     val isEmergency = post.type == PostType.EMERGENCY
+    val isNew = Dates.isWithinHours(post.publishedAt, 24)
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -49,12 +57,20 @@ fun PostCard(
             }
         )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (post.pinned) PillBadge(text = "Pinned")
+                if (post.pinned) PillBadge(text = t("Pinned"))
+                // "New" badge (#13)
+                if (isNew) {
+                    PillBadge(
+                        text = t("New"),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
                 if (isEmergency) {
                     PillBadge(
                         text = post.type.label,
@@ -74,44 +90,54 @@ fun PostCard(
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.weight(1f)
                 )
+                // Share (#15)
+                IconButton(onClick = onShare) {
+                    Icon(Icons.Filled.Share, contentDescription = t("Share post"))
+                }
                 if (onDelete != null) {
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Delete post")
+                        Icon(Icons.Filled.Delete, contentDescription = t("Delete post"))
                     }
                 }
             }
 
-            Text(
-                text = post.title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
-            )
-            if (post.body.isNotBlank()) {
+            Column(modifier = Modifier.padding(end = 8.dp)) {
                 Text(
-                    text = post.body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = post.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
-            }
-
-            if (attachmentUrl != null) {
-                if (post.attachmentPath.isImagePath()) {
-                    AsyncImage(
-                        model = attachmentUrl,
-                        contentDescription = "Attachment for ${post.title}",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .fillMaxWidth()
-                            .heightIn(max = 220.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                if (post.body.isNotBlank()) {
+                    Text(
+                        text = post.body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else {
-                    TextButton(onClick = { onOpenAttachment(attachmentUrl) }) {
-                        Icon(Icons.Filled.Description, contentDescription = null)
-                        Text("View attachment", modifier = Modifier.padding(start = 6.dp))
+                }
+
+                if (attachmentUrl != null) {
+                    if (post.attachmentPath.isImagePath()) {
+                        // Tap to open full screen (#16)
+                        AsyncImage(
+                            model = attachmentUrl,
+                            contentDescription = t("Attachment for %s. Tap to enlarge.", post.title),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .padding(top = 8.dp, bottom = 8.dp)
+                                .fillMaxWidth()
+                                .heightIn(max = 220.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onViewImage(attachmentUrl) }
+                        )
+                    } else {
+                        TextButton(onClick = { onOpenAttachment(attachmentUrl) }) {
+                            Icon(Icons.Filled.Description, contentDescription = null)
+                            Text(t("View attachment"), modifier = Modifier.padding(start = 6.dp))
+                        }
                     }
+                } else {
+                    Spacer(Modifier.height(8.dp))
                 }
             }
         }

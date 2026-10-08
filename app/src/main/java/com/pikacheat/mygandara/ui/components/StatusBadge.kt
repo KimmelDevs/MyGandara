@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pikacheat.mygandara.i18n.t
 import com.pikacheat.mygandara.data.model.ReportStatus
 
 private data class StatusColors(val container: Color, val content: Color)
@@ -29,7 +30,7 @@ private fun colorsForStatus(status: ReportStatus): StatusColors = when (status) 
         container = MaterialTheme.colorScheme.primaryContainer,
         content = MaterialTheme.colorScheme.onPrimaryContainer
     )
-    ReportStatus.REJECTED -> StatusColors(
+    ReportStatus.REJECTED, ReportStatus.CANCELLED -> StatusColors(
         container = MaterialTheme.colorScheme.surfaceVariant,
         content = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -47,7 +48,7 @@ fun StatusBadge(
         colors = CardDefaults.cardColors(containerColor = colors.container)
     ) {
         Text(
-            text = status.label,
+            text = t(status.label),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
             color = colors.content,
@@ -69,7 +70,7 @@ fun PillBadge(
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Text(
-            text = text,
+            text = t(text),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
             color = contentColor,

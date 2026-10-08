@@ -26,6 +26,21 @@ class BulletinViewModel(
     private val _filter = MutableStateFlow<PostType?>(null)
     val filter: StateFlow<PostType?> = _filter.asStateFlow()
 
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    fun setQuery(value: String) {
+        _query.value = value
+    }
+
+    fun visiblePosts(posts: List<PostDto>, type: PostType?, query: String): List<PostDto> {
+        val q = query.trim()
+        return posts.filter {
+            (type == null || it.type == type) &&
+                (q.isEmpty() || it.title.contains(q, true) || it.body.contains(q, true))
+        }
+    }
+
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 

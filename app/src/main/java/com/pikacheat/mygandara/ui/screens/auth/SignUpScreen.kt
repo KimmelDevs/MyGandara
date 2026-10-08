@@ -1,5 +1,6 @@
 package com.pikacheat.mygandara.ui.screens.auth
 
+import com.pikacheat.mygandara.i18n.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,10 +57,10 @@ fun SignUpScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Create account") },
+                title = { Text(t("Create account")) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"))
                     }
                 }
             )
@@ -77,7 +78,7 @@ fun SignUpScreen(
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
-                label = { Text("Full name") },
+                label = { Text(t("Full name")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Words,
@@ -88,7 +89,7 @@ fun SignUpScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
+                label = { Text(t("Email")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth()
@@ -96,7 +97,7 @@ fun SignUpScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password (at least 8 characters)") },
+                label = { Text(t("Password (at least 8 characters)")) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -105,10 +106,10 @@ fun SignUpScreen(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = acceptedPrivacy, onCheckedChange = { acceptedPrivacy = it })
-                Text("I have read and agree to the")
+                Text(t("I have read and agree to the"))
             }
             TextButton(onClick = onOpenPrivacyNotice, modifier = Modifier.padding(start = 36.dp)) {
-                Text("Privacy notice")
+                Text(t("Privacy notice"))
             }
 
             FormMessages(state)
@@ -121,7 +122,7 @@ fun SignUpScreen(
                 if (state.isLoading) {
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                 } else {
-                    Text("Sign up")
+                    Text(t("Sign up"))
                 }
             }
         }

@@ -56,6 +56,17 @@ class CreateReportViewModel(
         }
     }
 
+    /** Checks required fields before showing the confirmation summary; sets [CreateReportState.error] if invalid. */
+    fun validate(title: String, category: ReportCategory?): Boolean {
+        val error = when {
+            category == null -> "Choose a category."
+            title.trim().length < 3 -> "Give the report a short title."
+            else -> null
+        }
+        _state.update { it.copy(error = error) }
+        return error == null
+    }
+
     fun submit(title: String, description: String, category: ReportCategory?, address: String) {
         val current = _state.value
         if (current.isSubmitting) return

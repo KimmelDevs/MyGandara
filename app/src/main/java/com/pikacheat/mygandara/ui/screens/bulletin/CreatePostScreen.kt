@@ -1,5 +1,7 @@
 package com.pikacheat.mygandara.ui.screens.bulletin
 
+import com.pikacheat.mygandara.i18n.t
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -36,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pikacheat.mygandara.data.model.PostType
+import com.pikacheat.mygandara.ui.components.ConfirmDialog
 import com.pikacheat.mygandara.ui.viewmodel.CreatePostViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,6 +65,11 @@ fun CreatePostScreen(
     var title by rememberSaveable { mutableStateOf("") }
     var body by rememberSaveable { mutableStateOf("") }
     var pinned by rememberSaveable { mutableStateOf(false) }
+    var confirmDiscard by remember { mutableStateOf(false) }
+    val hasDraft = title.isNotBlank() || body.isNotBlank() || state.attachmentUri != null
+    val tryLeave = { if (hasDraft && !state.isSubmitting) confirmDiscard = true else onBackClick() }
+
+    BackHandler(enabled = hasDraft && !state.posted) { tryLeave() }
 
     val pickAttachment = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) viewModel.setAttachment(uri)
@@ -74,10 +83,10 @@ fun CreatePostScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("New bulletin post") },
+                title = { Text(t("New bulletin post")) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = tryLeave) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"))
                     }
                 }
             )
@@ -92,7 +101,7 @@ fun CreatePostScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Type", style = MaterialTheme.typography.labelLarge)
+            Text(t("Type"), style = MaterialTheme.typography.labelLarge)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.horizontalScroll(rememberScrollState())
@@ -101,13 +110,13 @@ fun CreatePostScreen(
                     FilterChip(
                         selected = type == option,
                         onClick = { type = option },
-                        label = { Text(option.label) }
+                        label = { Text(t(option.label)) }
                     )
                 }
             }
             if (type == PostType.EMERGENCY) {
                 Text(
-                    "Emergency posts are highlighted in red at the top of everyone's bulletin when pinned.",
+                    t("Emergency posts are highlighted in red at the top of everyone's bulletin when pinned."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -116,7 +125,7 @@ fun CreatePostScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it.take(160) },
-                label = { Text("Title") },
+                label = { Text(t("Title")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth()
@@ -124,7 +133,7 @@ fun CreatePostScreen(
             OutlinedTextField(
                 value = body,
                 onValueChange = { body = it },
-                label = { Text("Message") },
+                label = { Text(t("Message")) },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -132,7 +141,7 @@ fun CreatePostScreen(
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Pin to top", modifier = Modifier.weight(1f))
+                Text(t("Pin to top"), modifier = Modifier.weight(1f))
                 Switch(checked = pinned, onCheckedChange = { pinned = it })
             }
 
@@ -140,7 +149,7 @@ fun CreatePostScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.AttachFile, contentDescription = null)
                     Text(
-                        state.attachmentName ?: "Attachment",
+                        state.attachmentName ?: t("Attachment"),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
@@ -148,7 +157,7 @@ fun CreatePostScreen(
                             .padding(start = 6.dp)
                     )
                     IconButton(onClick = { viewModel.setAttachment(null) }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Remove attachment")
+                        Icon(Icons.Filled.Close, contentDescription = t("Remove attachment"))
                     }
                 }
             } else {
@@ -157,12 +166,12 @@ fun CreatePostScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Filled.AttachFile, contentDescription = null)
-                    Text("Attach image or PDF (optional)", modifier = Modifier.padding(start = 6.dp))
+                    Text(t("Attach image or PDF (optional)"), modifier = Modifier.padding(start = 6.dp))
                 }
             }
 
             state.error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(t(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             Button(
@@ -172,11 +181,26 @@ fun CreatePostScreen(
             ) {
                 if (state.isSubmitting) {
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                    Text("Posting…", modifier = Modifier.padding(start = 8.dp))
+                    Text(t("Posting…"), modifier = Modifier.padding(start = 8.dp))
                 } else {
-                    Text("Publish")
+                    Text(t("Publish"))
                 }
             }
         }
+    }
+
+    if (confirmDiscard) {
+        ConfirmDialog(
+            title = t("Discard this post?"),
+            message = t("Your draft will be lost."),
+            confirmLabel = t("Discard"),
+            dismissLabel = t("Keep editing"),
+            destructive = true,
+            onConfirm = {
+                confirmDiscard = false
+                onBackClick()
+            },
+            onDismiss = { confirmDiscard = false }
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.pikacheat.mygandara.ui.screens.privacy
 
+import com.pikacheat.mygandara.i18n.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,7 +46,7 @@ private val sections = listOf(
         "You have the right to be informed, to access, to correct, to object, to erasure or blocking, to data " +
         "portability, and to file a complaint with the National Privacy Commission (privacy.gov.ph).",
     "Contact" to
-        "For privacy questions or requests, contact: $DPO_CONTACT"
+        "For privacy questions or requests, contact: %s"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,10 +59,10 @@ fun PrivacyNoticeScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Privacy notice") },
+                title = { Text(t("Privacy notice")) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"))
                     }
                 }
             )
@@ -77,9 +78,9 @@ fun PrivacyNoticeScreen(
         ) {
             sections.forEach { (title, body) ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                    Text(t(title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Text(
-                        body,
+                        t(body, DPO_CONTACT),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

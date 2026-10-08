@@ -8,7 +8,11 @@ enum class ReportStatus(val label: String) {
     @SerialName("pending") PENDING("Pending"),
     @SerialName("in_progress") IN_PROGRESS("In progress"),
     @SerialName("resolved") RESOLVED("Resolved"),
-    @SerialName("rejected") REJECTED("Rejected")
+    @SerialName("rejected") REJECTED("Rejected"),
+    @SerialName("cancelled") CANCELLED("Cancelled");
+
+    /** Statuses staff can set (cancelling is the reporter's choice only). */
+    val isStaffSettable: Boolean get() = this != CANCELLED
 }
 
 @Serializable
@@ -34,9 +38,14 @@ data class ReportDto(
     val longitude: Double? = null,
     val address: String? = null,
     @SerialName("assigned_to") val assignedTo: String? = null,
+    @SerialName("ref_no") val refNo: Long? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
-)
+) {
+    /** e.g. MG-2026-0042, for quoting when following up with the LGU. */
+    val referenceNumber: String?
+        get() = refNo?.let { "MG-${createdAt.take(4)}-${it.toString().padStart(4, '0')}" }
+}
 
 /** Columns a citizen may set when submitting. Everything else is filled in by the database. */
 @Serializable

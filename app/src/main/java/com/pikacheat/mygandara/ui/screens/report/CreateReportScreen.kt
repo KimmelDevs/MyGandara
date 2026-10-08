@@ -1,8 +1,10 @@
 package com.pikacheat.mygandara.ui.screens.report
 
+import com.pikacheat.mygandara.i18n.t
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -62,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.pikacheat.mygandara.data.model.ReportCategory
+import com.pikacheat.mygandara.ui.components.ConfirmDialog
 import com.pikacheat.mygandara.ui.viewmodel.CreateReportViewModel
 import com.pikacheat.mygandara.util.LocationHelper
 import java.io.File
@@ -84,6 +87,13 @@ fun CreateReportScreen(
     var description by rememberSaveable { mutableStateOf("") }
     var address by rememberSaveable { mutableStateOf("") }
     var pendingCameraUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var confirmDiscard by remember { mutableStateOf(false) }
+    var confirmSubmit by remember { mutableStateOf(false) }
+    val hasDraft = title.isNotBlank() || description.isNotBlank() || address.isNotBlank() ||
+        state.photoUri != null || category != null
+    val tryLeave = { if (hasDraft && !state.isSubmitting) confirmDiscard = true else onBackClick() }
+
+    BackHandler(enabled = hasDraft && state.submittedId == null) { tryLeave() }
 
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
         if (saved) viewModel.setPhoto(pendingCameraUri?.toUri())
@@ -106,10 +116,10 @@ fun CreateReportScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Report a problem") },
+                title = { Text(t("Report a problem")) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = tryLeave) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"))
                     }
                 }
             )
@@ -126,11 +136,11 @@ fun CreateReportScreen(
         ) {
             ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
                 OutlinedTextField(
-                    value = category?.label ?: "",
+                    value = category?.label?.let { t(it) } ?: "",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Category") },
-                    placeholder = { Text("Choose a category") },
+                    label = { Text(t("Category")) },
+                    placeholder = { Text(t("Choose a category")) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -139,7 +149,7 @@ fun CreateReportScreen(
                 ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     ReportCategory.entries.forEach { option ->
                         DropdownMenuItem(
-                            text = { Text(option.label) },
+                            text = { Text(t(option.label)) },
                             onClick = {
                                 category = option
                                 expanded = false
@@ -152,8 +162,8 @@ fun CreateReportScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it.take(120) },
-                label = { Text("Title") },
-                placeholder = { Text("Pothole near barangay hall") },
+                label = { Text(t("Title")) },
+                placeholder = { Text(t("Pothole near barangay hall")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth()
@@ -162,8 +172,8 @@ fun CreateReportScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it.take(2000) },
-                label = { Text("Description") },
-                placeholder = { Text("Describe the issue in detail") },
+                label = { Text(t("Description")) },
+                placeholder = { Text(t("Describe the issue in detail")) },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -171,12 +181,12 @@ fun CreateReportScreen(
             )
 
             // Photo
-            Text("Photo (optional)", style = MaterialTheme.typography.labelLarge)
+            Text(t("Photo (optional)"), style = MaterialTheme.typography.labelLarge)
             if (state.photoUri != null) {
                 Box {
                     AsyncImage(
                         model = state.photoUri,
-                        contentDescription = "Selected photo",
+                        contentDescription = t("Selected photo"),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -189,7 +199,7 @@ fun CreateReportScreen(
                             .align(Alignment.TopEnd)
                             .padding(6.dp)
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Remove photo")
+                        Icon(Icons.Filled.Close, contentDescription = t("Remove photo"))
                     }
                 }
             } else {
@@ -207,7 +217,7 @@ fun CreateReportScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Filled.CameraAlt, contentDescription = null)
-                        Text("Camera", modifier = Modifier.padding(start = 6.dp))
+                        Text(t("Camera"), modifier = Modifier.padding(start = 6.dp))
                     }
                     OutlinedButton(
                         onClick = {
@@ -216,13 +226,13 @@ fun CreateReportScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Filled.PhotoLibrary, contentDescription = null)
-                        Text("Gallery", modifier = Modifier.padding(start = 6.dp))
+                        Text(t("Gallery"), modifier = Modifier.padding(start = 6.dp))
                     }
                 }
             }
 
             // Location
-            Text("Location", style = MaterialTheme.typography.labelLarge)
+            Text(t("Location"), style = MaterialTheme.typography.labelLarge)
             val location = state.location
             if (location != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -238,7 +248,7 @@ fun CreateReportScreen(
                         modifier = Modifier.weight(1f)
                     )
                     IconButton(onClick = viewModel::clearLocation) {
-                        Icon(Icons.Filled.Close, contentDescription = "Remove location")
+                        Icon(Icons.Filled.Close, contentDescription = t("Remove location"))
                     }
                 }
             } else {
@@ -255,40 +265,77 @@ fun CreateReportScreen(
                 ) {
                     if (state.isLocating) {
                         CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                        Text("Getting location…", modifier = Modifier.padding(start = 8.dp))
+                        Text(t("Getting location…"), modifier = Modifier.padding(start = 8.dp))
                     } else {
                         Icon(Icons.Filled.LocationOn, contentDescription = null)
-                        Text("Add my current location", modifier = Modifier.padding(start = 6.dp))
+                        Text(t("Add my current location"), modifier = Modifier.padding(start = 6.dp))
                     }
                 }
             }
             OutlinedTextField(
                 value = address,
                 onValueChange = { address = it.take(200) },
-                label = { Text("Barangay / landmark") },
-                placeholder = { Text("e.g. Brgy. Rizal, near the covered court") },
+                label = { Text(t("Barangay / landmark")) },
+                placeholder = { Text(t("e.g. Brgy. Rizal, near the covered court")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier.fillMaxWidth()
             )
 
             state.error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(t(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             Button(
-                onClick = { viewModel.submit(title, description, category, address) },
+                onClick = {
+                    if (viewModel.validate(title, category)) confirmSubmit = true
+                },
                 enabled = !state.isSubmitting,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (state.isSubmitting) {
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                    Text("Sending…", modifier = Modifier.padding(start = 8.dp))
+                    Text(t("Sending…"), modifier = Modifier.padding(start = 8.dp))
                 } else {
-                    Text("Submit report")
+                    Text(t("Submit report"))
                 }
             }
         }
+    }
+
+    if (confirmDiscard) {
+        ConfirmDialog(
+            title = t("Discard this report?"),
+            message = t("What you've typed and the photo you attached will be lost."),
+            confirmLabel = t("Discard"),
+            dismissLabel = t("Keep editing"),
+            destructive = true,
+            onConfirm = {
+                confirmDiscard = false
+                onBackClick()
+            },
+            onDismiss = { confirmDiscard = false }
+        )
+    }
+    if (confirmSubmit) {
+        val summary = buildString {
+            appendLine(t("Category: %s", t(category?.label.orEmpty())))
+            appendLine(t("Title: %s", title.trim()))
+            appendLine(t(if (state.photoUri != null) "Photo: attached" else "Photo: none"))
+            appendLine(t(if (state.location != null) "GPS location: attached" else "GPS location: not attached"))
+            if (address.isNotBlank()) append(t("Place: %s", address.trim()))
+        }.trim()
+        ConfirmDialog(
+            title = t("Send this report?"),
+            message = summary,
+            confirmLabel = t("Send"),
+            dismissLabel = t("Edit"),
+            onConfirm = {
+                confirmSubmit = false
+                viewModel.submit(title, description, category, address)
+            },
+            onDismiss = { confirmSubmit = false }
+        )
     }
 }
 

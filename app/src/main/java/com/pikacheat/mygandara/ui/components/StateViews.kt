@@ -1,5 +1,6 @@
 package com.pikacheat.mygandara.ui.components
 
+import com.pikacheat.mygandara.i18n.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,14 +47,14 @@ fun MessageBox(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = message,
+            text = t(message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         if (actionLabel != null) {
             OutlinedButton(onClick = onAction, modifier = Modifier.padding(top = 12.dp)) {
-                Text(actionLabel)
+                Text(t(actionLabel))
             }
         }
     }
@@ -67,6 +68,7 @@ fun <T> UiStateContent(
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    loading: @Composable () -> Unit = { LoadingBox() },
     content: @Composable (T) -> Unit
 ) {
     PullToRefreshBox(
@@ -75,7 +77,7 @@ fun <T> UiStateContent(
         modifier = modifier.fillMaxSize()
     ) {
         when (state) {
-            UiState.Loading -> LoadingBox()
+            UiState.Loading -> loading()
             is UiState.Error -> MessageBox(state.message, actionLabel = "Try again", onAction = onRefresh)
             is UiState.Success -> content(state.data)
         }
@@ -86,7 +88,7 @@ fun <T> UiStateContent(
 @Composable
 fun EmptyListText(message: String, modifier: Modifier = Modifier) {
     Text(
-        text = message,
+        text = t(message),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,

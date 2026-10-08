@@ -1,7 +1,15 @@
 package com.pikacheat.mygandara.ui.screens.report
 
+import com.pikacheat.mygandara.i18n.I18n
+import com.pikacheat.mygandara.i18n.LocalLanguage
+import com.pikacheat.mygandara.i18n.t
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,14 +18,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,9 +39,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -56,12 +71,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.pikacheat.mygandara.data.model.ReportStatus
 import com.pikacheat.mygandara.data.model.ReportUpdateDto
-import com.pikacheat.mygandara.ui.components.StatusBadge
+import com.pikacheat.mygandara.ui.components.ConfirmDialog
 import com.pikacheat.mygandara.ui.components.RefreshOnResume
+import com.pikacheat.mygandara.ui.components.StatusBadge
 import com.pikacheat.mygandara.ui.components.UiStateContent
+import com.pikacheat.mygandara.ui.components.ZoomableImageDialog
+import com.pikacheat.mygandara.ui.viewmodel.ActionState
 import com.pikacheat.mygandara.ui.viewmodel.ReportDetail
 import com.pikacheat.mygandara.ui.viewmodel.ReportDetailViewModel
-import com.pikacheat.mygandara.ui.viewmodel.StatusUpdateState
 import com.pikacheat.mygandara.util.Dates
 import java.util.Locale
 
@@ -69,18 +86,20 @@ import java.util.Locale
 @Composable
 fun ReportDetailScreen(
     isStaff: Boolean,
+    currentUserId: String,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ReportDetailViewModel = viewModel(factory = ReportDetailViewModel.factory(isStaff))
+    viewModel: ReportDetailViewModel = viewModel(factory = ReportDetailViewModel.factory(isStaff, currentUserId))
 ) {
     val state by viewModel.detail.state.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.detail.isRefreshing.collectAsStateWithLifecycle()
-    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+    val actionState by viewModel.actionState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val language = LocalLanguage.current
 
-    LaunchedEffect(updateState.message) {
-        updateState.message?.let {
-            snackbarHostState.showSnackbar(it)
+    LaunchedEffect(actionState.message) {
+        actionState.message?.let {
+            snackbarHostState.showSnackbar(I18n.tr(language, it))
             viewModel.clearMessage()
         }
     }
@@ -91,10 +110,10 @@ fun ReportDetailScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Report details") },
+                title = { Text(t("Report details")) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Back"))
                     }
                 }
             )
@@ -110,8 +129,9 @@ fun ReportDetailScreen(
             ReportDetailContent(
                 detail = detail,
                 isStaff = isStaff,
-                updateState = updateState,
-                onAddUpdate = viewModel::addUpdate
+                currentUserId = currentUserId,
+                actionState = actionState,
+                viewModel = viewModel
             )
         }
     }
@@ -121,11 +141,15 @@ fun ReportDetailScreen(
 private fun ReportDetailContent(
     detail: ReportDetail,
     isStaff: Boolean,
-    updateState: StatusUpdateState,
-    onAddUpdate: (ReportStatus?, String, onDone: () -> Unit) -> Unit
+    currentUserId: String,
+    actionState: ActionState,
+    viewModel: ReportDetailViewModel
 ) {
     val report = detail.report
     val context = LocalContext.current
+    val language = LocalLanguage.current
+    var showPhoto by remember { mutableStateOf(false) }
+    var confirmCancel by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -134,26 +158,32 @@ private fun ReportDetailContent(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        // Photo; tap for full screen (#17)
         if (detail.photoUrl != null) {
             AsyncImage(
                 model = detail.photoUrl,
-                contentDescription = "Photo of the reported problem",
+                contentDescription = t("Photo of the reported problem. Tap to enlarge."),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 260.dp)
                     .clip(RoundedCornerShape(8.dp))
+                    .clickable { showPhoto = true }
             )
+            TextButton(onClick = { showPhoto = true }) {
+                Icon(Icons.Filled.ZoomIn, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(t("View full photo"), modifier = Modifier.padding(start = 4.dp))
+            }
         }
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = 12.dp)
+            modifier = Modifier.padding(top = 8.dp)
         ) {
             StatusBadge(status = report.status)
             Text(
-                text = "Submitted ${Dates.dateTime(report.createdAt)}",
+                text = t("Submitted %s", Dates.dateTime(report.createdAt)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -175,40 +205,65 @@ private fun ReportDetailContent(
         }
 
         Column(modifier = Modifier.padding(vertical = 12.dp)) {
-            DetailRow("Category", report.category.label)
-            report.address?.takeIf { it.isNotBlank() }?.let { DetailRow("Location", it) }
+            // Reference number with copy (#19)
+            report.referenceNumber?.let { ref ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    DetailRow(t("Reference no."), ref, Modifier.weight(1f))
+                    IconButton(onClick = { copyToClipboard(context, ref, I18n.tr(language, "Copied %s", ref)) }) {
+                        Icon(Icons.Filled.ContentCopy, contentDescription = t("Copy reference number"))
+                    }
+                }
+            }
+            DetailRow(t("Category"), t(report.category.label))
+            report.address?.takeIf { it.isNotBlank() }?.let { DetailRow(t("Location"), it) }
             detail.reporter?.let { reporter ->
-                DetailRow("Reported by", reporter.displayName)
-                reporter.phone?.let { DetailRow("Mobile", it) }
-                reporter.email?.let { DetailRow("Email", it) }
+                DetailRow(t("Reported by"), reporter.displayName)
+                reporter.phone?.let { DetailRow(t("Mobile"), it) }
+                reporter.email?.let { DetailRow(t("Email"), it) }
+            }
+            if (isStaff) {
+                DetailRow(
+                    t("Assigned to"),
+                    when {
+                        report.assignedTo == null -> t("Nobody yet")
+                        report.assignedTo == currentUserId -> t("You")
+                        else -> detail.assignee?.displayName ?: t("Another staff member")
+                    }
+                )
             }
         }
 
         if (report.latitude != null && report.longitude != null) {
             val lat = report.latitude
             val lng = report.longitude
-            TextButton(onClick = {
-                val coords = String.format(Locale.US, "%.6f,%.6f", lat, lng)
-                val geo = Intent(Intent.ACTION_VIEW, "geo:$coords?q=$coords".toUri())
-                try {
-                    context.startActivity(geo)
-                } catch (_: ActivityNotFoundException) {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, "https://www.google.com/maps/search/?api=1&query=$coords".toUri())
-                    )
-                }
-            }) {
+            TextButton(onClick = { openInMaps(context, lat, lng) }) {
                 Icon(Icons.Filled.Map, contentDescription = null)
-                Text("Open location in maps", modifier = Modifier.padding(start = 6.dp))
+                Text(t("Open location in maps"), modifier = Modifier.padding(start = 6.dp))
+            }
+        }
+
+        // Cancel my report (#18)
+        if (!isStaff && report.reporterId == currentUserId && report.status == ReportStatus.PENDING) {
+            OutlinedButton(
+                onClick = { confirmCancel = true },
+                enabled = !actionState.isSaving,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(t("Cancel this report"), color = MaterialTheme.colorScheme.error)
             }
         }
 
         if (isStaff) {
-            StaffUpdatePanel(current = report.status, updateState = updateState, onAddUpdate = onAddUpdate)
+            StaffPanel(
+                current = report.status,
+                isAssignedToMe = report.assignedTo == currentUserId,
+                actionState = actionState,
+                viewModel = viewModel
+            )
         }
 
         Text(
-            text = "Status timeline",
+            text = t("Status timeline"),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
@@ -219,18 +274,39 @@ private fun ReportDetailContent(
             }
         }
     }
+
+    if (showPhoto && detail.photoUrl != null) {
+        ZoomableImageDialog(url = detail.photoUrl, contentDescription = report.title, onDismiss = { showPhoto = false })
+    }
+    if (confirmCancel) {
+        ConfirmDialog(
+            title = t("Cancel this report?"),
+            message = t("The LGU will stop working on \"%s\". You can't undo this.", report.title),
+            confirmLabel = t("Cancel report"),
+            dismissLabel = t("Keep it"),
+            destructive = true,
+            onConfirm = {
+                confirmCancel = false
+                viewModel.cancelReport()
+            },
+            onDismiss = { confirmCancel = false }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StaffUpdatePanel(
+private fun StaffPanel(
     current: ReportStatus,
-    updateState: StatusUpdateState,
-    onAddUpdate: (ReportStatus?, String, onDone: () -> Unit) -> Unit
+    isAssignedToMe: Boolean,
+    actionState: ActionState,
+    viewModel: ReportDetailViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
     var newStatus by rememberSaveable { mutableStateOf<ReportStatus?>(null) }
     var note by rememberSaveable { mutableStateOf("") }
+    val clear = { newStatus = null; note = "" }
+    val closed = current == ReportStatus.RESOLVED || current == ReportStatus.REJECTED || current == ReportStatus.CANCELLED
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -240,13 +316,64 @@ private fun StaffUpdatePanel(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Post an update", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Text(t("Staff actions"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+
+            // Assign to me (#21)
+            OutlinedButton(
+                onClick = { viewModel.assignToMe(!isAssignedToMe) },
+                enabled = !actionState.isSaving,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(t(if (isAssignedToMe) "Unassign me" else "Assign to me"))
+            }
+
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text(t("Note to the reporter (optional)")) },
+                placeholder = { Text(t("e.g. Crew scheduled for Monday")) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Quick status buttons (#20); the note above is sent along with them.
+            if (!closed) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (current == ReportStatus.PENDING) {
+                        FilledTonalButton(
+                            onClick = { viewModel.addUpdate(ReportStatus.IN_PROGRESS, note, clear) },
+                            enabled = !actionState.isSaving,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(t("Start"), modifier = Modifier.padding(start = 4.dp))
+                        }
+                    }
+                    Button(
+                        onClick = { viewModel.addUpdate(ReportStatus.RESOLVED, note, clear) },
+                        enabled = !actionState.isSaving,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text(t("Resolve"), modifier = Modifier.padding(start = 4.dp))
+                    }
+                    OutlinedButton(
+                        onClick = { viewModel.addUpdate(ReportStatus.REJECTED, note, clear) },
+                        enabled = !actionState.isSaving,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Filled.Block, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text(t("Reject"), modifier = Modifier.padding(start = 4.dp))
+                    }
+                }
+            }
+
+            // Full control: any status, or just a note.
             ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
                 OutlinedTextField(
-                    value = newStatus?.label ?: "Keep as ${current.label}",
+                    value = newStatus?.label?.let { t(it) } ?: t("Keep as %s", t(current.label)),
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("New status") },
+                    label = { Text(t("Other status")) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -254,39 +381,32 @@ private fun StaffUpdatePanel(
                 )
                 ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     DropdownMenuItem(
-                        text = { Text("Keep as ${current.label}") },
+                        text = { Text(t("Keep as %s", t(current.label))) },
                         onClick = { newStatus = null; expanded = false }
                     )
-                    ReportStatus.entries.filter { it != current }.forEach { status ->
+                    ReportStatus.entries.filter { it != current && it.isStaffSettable }.forEach { status ->
                         DropdownMenuItem(
-                            text = { Text(status.label) },
+                            text = { Text(t(status.label)) },
                             onClick = { newStatus = status; expanded = false }
                         )
                     }
                 }
             }
-            OutlinedTextField(
-                value = note,
-                onValueChange = { note = it },
-                label = { Text("Note to the reporter (optional)") },
-                placeholder = { Text("e.g. Assigned to engineering office") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                onClick = { onAddUpdate(newStatus, note) { newStatus = null; note = "" } },
-                enabled = !updateState.isSaving,
+            OutlinedButton(
+                onClick = { viewModel.addUpdate(newStatus, note, clear) },
+                enabled = !actionState.isSaving,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (updateState.isSaving) "Posting…" else "Post update")
+                Text(t(if (actionState.isSaving) "Saving…" else if (newStatus == null) "Post note only" else "Post update"))
             }
         }
     }
 }
 
 @Composable
-private fun DetailRow(label: String, value: String) {
+private fun DetailRow(label: String, value: String, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -315,18 +435,31 @@ private fun TimelineRow(update: ReportUpdateDto, isLatest: Boolean) {
         )
         Column {
             Text(
-                text = update.status?.label ?: "Note",
+                text = t(update.status?.label ?: "Note"),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
-            update.note?.let {
-                Text(text = it, style = MaterialTheme.typography.bodyMedium)
-            }
+            update.note?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
             Text(
                 text = Dates.dateTime(update.createdAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline
             )
         }
+    }
+}
+
+private fun copyToClipboard(context: Context, text: String, toast: String) {
+    context.getSystemService(ClipboardManager::class.java)
+        ?.setPrimaryClip(ClipData.newPlainText("Reference number", text))
+    Toast.makeText(context, toast, Toast.LENGTH_SHORT).show()
+}
+
+private fun openInMaps(context: Context, lat: Double, lng: Double) {
+    val coords = String.format(Locale.US, "%.6f,%.6f", lat, lng)
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, "geo:$coords?q=$coords".toUri()))
+    } catch (_: ActivityNotFoundException) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, "https://www.google.com/maps/search/?api=1&query=$coords".toUri()))
     }
 }

@@ -1,5 +1,7 @@
 package com.pikacheat.mygandara.ui.screens.auth
 
+import com.pikacheat.mygandara.i18n.t
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +26,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.pikacheat.mygandara.R
+import com.pikacheat.mygandara.ui.components.LanguagePicker
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -51,23 +57,35 @@ fun LoginScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
         ) {
+            LanguagePicker(modifier = Modifier.align(Alignment.CenterHorizontally))
+            Image(
+                painter = painterResource(R.drawable.gandara_seal),
+                contentDescription = t("Official seal of Gandara, Samar"),
+                modifier = Modifier
+                    .size(132.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
             Text(
-                text = "MyGandara",
+                text = t("MyGandara"),
+                modifier = Modifier.align(Alignment.CenterHorizontally),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Report problems and get updates from the Municipality of Gandara.",
+                text = t("Report problems and get updates from the Municipality of Gandara."),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp)
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
             )
 
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
+                label = { Text(t("Email")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth()
@@ -75,7 +93,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text(t("Password")) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -92,11 +110,11 @@ fun LoginScreen(
                 if (state.isLoading) {
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                 } else {
-                    Text("Sign in")
+                    Text(t("Sign in"))
                 }
             }
             TextButton(onClick = onGoToSignUp, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Text("No account yet? Sign up")
+                Text(t("No account yet? Sign up"))
             }
         }
     }
@@ -105,9 +123,9 @@ fun LoginScreen(
 @Composable
 internal fun FormMessages(state: AuthFormState) {
     state.error?.let {
-        Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        Text(text = t(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
     state.info?.let {
-        Text(text = it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+        Text(text = t(it), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
     }
 }

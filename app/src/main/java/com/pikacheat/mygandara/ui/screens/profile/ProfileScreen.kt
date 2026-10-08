@@ -1,5 +1,8 @@
 package com.pikacheat.mygandara.ui.screens.profile
 
+import com.pikacheat.mygandara.i18n.I18n
+import com.pikacheat.mygandara.i18n.LocalLanguage
+import com.pikacheat.mygandara.i18n.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pikacheat.mygandara.data.model.Profile
+import com.pikacheat.mygandara.ui.components.ConfirmDialog
+import com.pikacheat.mygandara.ui.components.LanguagePicker
 import com.pikacheat.mygandara.ui.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,17 +57,19 @@ fun ProfileScreen(
     var barangay by rememberSaveable(profile.id) { mutableStateOf(profile.barangay.orEmpty()) }
     val saveState by viewModel.saveState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var confirmSignOut by remember { mutableStateOf(false) }
+    val language = LocalLanguage.current
 
     LaunchedEffect(saveState.message) {
         saveState.message?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(I18n.tr(language, it))
             viewModel.clearMessage()
         }
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("Profile") }) },
+        topBar = { TopAppBar(title = { Text(t("Profile")) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(
@@ -76,7 +83,7 @@ fun ProfileScreen(
         ) {
             Text(profile.email.orEmpty(), style = MaterialTheme.typography.bodyMedium)
             Text(
-                "Role: ${profile.role.label}",
+                t("Role: %s", t(profile.role.label)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -84,7 +91,7 @@ fun ProfileScreen(
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
-                label = { Text("Full name") },
+                label = { Text(t("Full name")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier.fillMaxWidth()
@@ -92,7 +99,7 @@ fun ProfileScreen(
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("Mobile number (optional)") },
+                label = { Text(t("Mobile number (optional)")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier.fillMaxWidth()
@@ -100,7 +107,7 @@ fun ProfileScreen(
             OutlinedTextField(
                 value = barangay,
                 onValueChange = { barangay = it },
-                label = { Text("Barangay (optional)") },
+                label = { Text(t("Barangay (optional)")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier.fillMaxWidth()
@@ -110,15 +117,31 @@ fun ProfileScreen(
                 enabled = !saveState.isSaving,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (saveState.isSaving) "Saving…" else "Save")
+                Text(t(if (saveState.isSaving) "Saving…" else "Save"))
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            TextButton(onClick = onOpenPrivacyNotice) { Text("Privacy notice") }
-            OutlinedButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
-                Text("Sign out")
+            Text(t("Language"), style = MaterialTheme.typography.labelLarge)
+            LanguagePicker()
+
+            TextButton(onClick = onOpenPrivacyNotice) { Text(t("Privacy notice")) }
+            OutlinedButton(onClick = { confirmSignOut = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(t("Sign out"))
             }
         }
+    }
+
+    if (confirmSignOut) {
+        ConfirmDialog(
+            title = t("Sign out?"),
+            message = t("You'll need your email and password to sign in again."),
+            confirmLabel = t("Sign out"),
+            onConfirm = {
+                confirmSignOut = false
+                onSignOut()
+            },
+            onDismiss = { confirmSignOut = false }
+        )
     }
 }

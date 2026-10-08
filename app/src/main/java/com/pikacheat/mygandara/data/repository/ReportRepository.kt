@@ -10,9 +10,12 @@ import com.pikacheat.mygandara.data.remote.Tables
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.util.UUID
 import kotlin.time.Duration.Companion.hours
 
@@ -62,6 +65,26 @@ class ReportRepository(private val client: () -> SupabaseClient) {
             contentType = ContentType.Image.JPEG
         }
         return path
+    }
+
+    /** Citizen withdraws their own pending report (checked inside the database function). */
+    suspend fun cancelReport(reportId: String) {
+        client().postgrest.rpc("cancel_my_report", buildJsonObject { put("target_report", reportId) })
+    }
+
+    /** Staff only (RLS). Pass null to unassign. */
+    suspend fun assign(reportId: String, staffId: String?) {
+        client().from(Tables.REPORTS).update(
+            buildJsonObject { put("assigned_to", staffId) }
+        ) { filter { eq("id", reportId) } }
+    }
+
+    /** Signed URLs for several photos in one request; map of object path to URL. */
+    suspend fun photoUrls(paths: List<String>): Map<String, String> {
+        if (paths.isEmpty()) return emptyMap()
+        return client().storage.from(Buckets.REPORT_PHOTOS)
+            .createSignedUrls(1.hours, paths)
+            .associate { it.path to it.signedURL }
     }
 
     suspend fun photoUrl(path: String): String =

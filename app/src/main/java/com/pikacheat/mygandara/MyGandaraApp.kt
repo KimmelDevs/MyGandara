@@ -4,5 +4,5 @@ import android.app.Application
 import com.pikacheat.mygandara.data.AppContainer
 
 class MyGandaraApp : Application() {
-    val container: AppContainer by lazy { AppContainer() }
+    val container: AppContainer by lazy { AppContainer(this) }
 }

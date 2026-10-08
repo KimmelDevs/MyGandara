@@ -1,6 +1,9 @@
 package com.pikacheat.mygandara.navigation
 
+import com.pikacheat.mygandara.i18n.t
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -12,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,7 +28,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.pikacheat.mygandara.data.model.Profile
 import com.pikacheat.mygandara.data.model.UserRole
+import com.pikacheat.mygandara.ui.components.EmergencyBanner
 import com.pikacheat.mygandara.ui.components.LoadingBox
+import com.pikacheat.mygandara.ui.components.OfflineBanner
+import com.pikacheat.mygandara.ui.viewmodel.EmergencyViewModel
+import com.pikacheat.mygandara.util.isOnlineFlow
 import com.pikacheat.mygandara.ui.components.MessageBox
 import com.pikacheat.mygandara.ui.screens.auth.LoginScreen
 import com.pikacheat.mygandara.ui.screens.auth.SignUpScreen
@@ -51,8 +60,7 @@ fun MyGandaraRoot(
         SessionState.Loading -> LoadingBox(Modifier.safeDrawingPadding())
         SessionState.NotConfigured -> MessageBox(
             modifier = Modifier.safeDrawingPadding(),
-            message =
-            "Supabase is not configured.\n\nAdd SUPABASE_URL and SUPABASE_ANON_KEY to local.properties, " +
+            message = "Supabase is not configured.\n\nAdd SUPABASE_URL and SUPABASE_ANON_KEY to local.properties, " +
                 "then sync Gradle and rebuild."
         )
         is SessionState.Error -> MessageBox(
@@ -124,17 +132,31 @@ private fun SignedInNavGraph(
     val isStaff = profile.role.isStaff
     val isAdmin = profile.role == UserRole.ADMIN
 
+    val context = LocalContext.current
+    val isOnline by remember { context.isOnlineFlow() }.collectAsStateWithLifecycle(initialValue = true)
+    val emergencyViewModel: EmergencyViewModel = viewModel(factory = EmergencyViewModel.Factory)
+    val emergency by emergencyViewModel.emergency.collectAsStateWithLifecycle()
+
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = currentRoute == tab.screen.route,
-                            onClick = { navController.navigateToTab(tab.screen.route) },
-                            icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(tab.label) }
-                        )
+            // Banners sit above the tab bar; on screens without tabs they clear the system nav bar.
+            Column(modifier = if (showBottomBar) Modifier else Modifier.navigationBarsPadding()) {
+                EmergencyBanner(
+                    post = emergency,
+                    onClick = { navController.navigateToTab(Screen.Bulletin.route) },
+                    onDismiss = emergencyViewModel::dismiss
+                )
+                OfflineBanner(visible = !isOnline)
+                if (showBottomBar) {
+                    NavigationBar {
+                        tabs.forEach { tab ->
+                            NavigationBarItem(
+                                selected = currentRoute == tab.screen.route,
+                                onClick = { navController.navigateToTab(tab.screen.route) },
+                                icon = { Icon(tab.icon, contentDescription = null) },
+                                label = { Text(t(tab.label)) }
+                            )
+                        }
                     }
                 }
             }
@@ -158,6 +180,7 @@ private fun SignedInNavGraph(
             }
             composable(Screen.MyReports.route) {
                 MyReportsScreen(
+                    currentUserId = profile.id,
                     onNewReportClick = { navController.navigate(Screen.CreateReport.route) },
                     onReportClick = openReport
                 )
@@ -183,12 +206,12 @@ private fun SignedInNavGraph(
                 )
             }
             composable(Screen.ReportDetail.route) {
-                ReportDetailScreen(isStaff = isStaff, onBackClick = { navController.popBackStack() })
+                ReportDetailScreen(isStaff = isStaff, currentUserId = profile.id, onBackClick = { navController.popBackStack() })
             }
 
             if (isStaff) {
                 composable(Screen.Dashboard.route) {
-                    DashboardScreen(onReportClick = openReport)
+                    DashboardScreen(currentUserId = profile.id, onReportClick = openReport)
                 }
             }
             if (isAdmin) {

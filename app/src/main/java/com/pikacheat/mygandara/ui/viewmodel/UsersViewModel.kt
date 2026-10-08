@@ -18,6 +18,14 @@ class UsersViewModel(private val profileRepository: ProfileRepository) : ViewMod
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
+    /** null = every role. */
+    private val _roleFilter = MutableStateFlow<UserRole?>(null)
+    val roleFilter: StateFlow<UserRole?> = _roleFilter.asStateFlow()
+
+    fun setRoleFilter(role: UserRole?) {
+        _roleFilter.value = role
+    }
+
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
@@ -32,7 +40,7 @@ class UsersViewModel(private val profileRepository: ProfileRepository) : ViewMod
     fun setRole(user: Profile, role: UserRole) {
         viewModelScope.launch {
             val error = runAction { profileRepository.setRole(user.id, role) }
-            _message.value = error ?: "${user.displayName} is now ${role.label.lowercase()}"
+            _message.value = error ?: "Role updated"
             users.refresh(showIndicator = false)
         }
     }
@@ -46,11 +54,11 @@ class UsersViewModel(private val profileRepository: ProfileRepository) : ViewMod
     }
 }
 
-fun List<Profile>.matching(query: String): List<Profile> {
+fun List<Profile>.matching(query: String, role: UserRole? = null): List<Profile> {
     val q = query.trim()
-    if (q.isEmpty()) return this
-    return filter {
-        it.fullName.orEmpty().contains(q, ignoreCase = true) ||
+    return filter { role == null || it.role == role }.filter {
+        q.isEmpty() ||
+            it.fullName.orEmpty().contains(q, ignoreCase = true) ||
             it.email.orEmpty().contains(q, ignoreCase = true) ||
             it.barangay.orEmpty().contains(q, ignoreCase = true)
     }

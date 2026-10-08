@@ -2,8 +2,10 @@ package com.pikacheat.mygandara.data.repository
 
 import com.pikacheat.mygandara.data.model.NewPost
 import com.pikacheat.mygandara.data.model.PostDto
+import com.pikacheat.mygandara.data.model.PostType
 import com.pikacheat.mygandara.data.remote.Buckets
 import com.pikacheat.mygandara.data.remote.Tables
+import com.pikacheat.mygandara.util.Dates
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -18,6 +20,19 @@ class PostRepository(private val client: () -> SupabaseClient) {
             order("pinned", Order.DESCENDING)
             order("published_at", Order.DESCENDING)
         }.decodeList()
+
+    /** Most recent emergency post from the last [withinHours] hours, if any. */
+    suspend fun latestEmergency(withinHours: Long = 72): PostDto? {
+        val since = Dates.isoHoursAgo(withinHours)
+        return client().from(Tables.POSTS).select {
+            filter {
+                eq("type", PostType.EMERGENCY)
+                gte("published_at", since)
+            }
+            order("published_at", Order.DESCENDING)
+            limit(1)
+        }.decodeList<PostDto>().firstOrNull()
+    }
 
     /** Admin only (enforced by RLS). */
     suspend fun createPost(post: NewPost): PostDto =

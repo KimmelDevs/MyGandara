@@ -57,7 +57,7 @@ Steps 1–5 and 7 are implemented in code; step 6 push notifications are skipped
 (needs `JAVA_HOME` = Android Studio's `jbr`; compileSdk 37, Kotlin 2.4.21, supabase-kt 3.8.0). Not yet tested against a
 live Supabase project.
 
-- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`; checks in `supabase/tests/rls_checks.sql`;
+- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`; checks in `supabase/tests/rls_checks.sql`;
   setup + security model in `supabase/README.md`. Add new SQL as new numbered migration files, never edit applied ones.
 - Status changes go through `report_updates` (trigger copies status onto `reports`). Roles change only via the admin-only
   `set_user_role()` RPC. Reports are rate-limited to 10/hour per user.
@@ -68,3 +68,11 @@ live Supabase project.
   (login, sign-up, privacy) vs signed-in graph with role-based bottom tabs (`Tab.forRole`).
 - Photos: `util/ImageCompressor` (resize + strip EXIF). GPS: `util/LocationHelper` (fused location, asked on tap).
 - Privacy notice text in `ui/screens/privacy/PrivacyNoticeScreen.kt` still has a DPO contact placeholder.
+- Branding: Gandara seal at `res/drawable-nodpi/gandara_seal.png` (launcher icon + login); colours in `ui/theme/Color.kt`
+  (wreath green / gold / sky blue). Dynamic colour is off on purpose.
+- UI text is English wrapped in `t("...")` (`i18n/I18n.kt`); the English text is the key into
+  `i18n/FilipinoStrings.kt` and `i18n/WarayStrings.kt` (missing keys fall back to English). When adding UI text,
+  wrap it in `t()` and add both translations. Templates use `%s` / `%1$s` (escape `$` in Kotlin). Shared components
+  (ConfirmDialog, MessageBox, EmptyListText, ChoiceChipRow, StatusBadge, PillBadge) translate their inputs themselves.
+  `TranslationsTest` checks placeholders match. The Waray table is a first draft that needs native-speaker review.
+- On-device prefs (`util/LocalStore`): language, seen report versions ("Updated" dot), dismissed emergency banner.
