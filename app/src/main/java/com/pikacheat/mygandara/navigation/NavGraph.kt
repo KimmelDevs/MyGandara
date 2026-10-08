@@ -180,6 +180,7 @@ private fun SignedInNavGraph(
             composable(Screen.Bulletin.route) {
                 BulletinScreen(
                     canPost = isAdmin,
+                    currentUserId = profile.id,
                     onNewPostClick = { navController.navigate(Screen.CreatePost.route) }
                 )
             }

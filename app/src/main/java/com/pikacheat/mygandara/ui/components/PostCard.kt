@@ -1,20 +1,14 @@
 package com.pikacheat.mygandara.ui.components
 
-import com.pikacheat.mygandara.i18n.t
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,21 +19,24 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.pikacheat.mygandara.data.model.PostDto
 import com.pikacheat.mygandara.data.model.PostType
+import com.pikacheat.mygandara.data.model.ReactionType
+import com.pikacheat.mygandara.i18n.t
+import com.pikacheat.mygandara.ui.viewmodel.ReactionSummary
 import com.pikacheat.mygandara.util.Dates
 
 @Composable
 fun PostCard(
     post: PostDto,
-    attachmentUrl: String?,
-    onOpenAttachment: (String) -> Unit,
-    onViewImage: (String) -> Unit,
+    imageUrls: List<String>,
+    documentUrl: String?,
+    reactions: ReactionSummary,
+    onOpenDocument: (String) -> Unit,
+    onViewImage: (index: Int) -> Unit,
+    onReact: (ReactionType) -> Unit,
     onShare: () -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null
@@ -57,16 +54,16 @@ fun PostCard(
             }
         )
     ) {
-        Column(modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (post.pinned) PillBadge(text = t("Pinned"))
+                if (post.pinned) PillBadge(text = "Pinned")
                 // "New" badge (#13)
                 if (isNew) {
                     PillBadge(
-                        text = t("New"),
+                        text = "New",
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
@@ -90,10 +87,6 @@ fun PostCard(
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.weight(1f)
                 )
-                // Share (#15)
-                IconButton(onClick = onShare) {
-                    Icon(Icons.Filled.Share, contentDescription = t("Share post"))
-                }
                 if (onDelete != null) {
                     IconButton(onClick = onDelete) {
                         Icon(Icons.Filled.Delete, contentDescription = t("Delete post"))
@@ -101,48 +94,40 @@ fun PostCard(
                 }
             }
 
-            Column(modifier = Modifier.padding(end = 8.dp)) {
+            Text(
+                text = post.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+            )
+            if (post.body.isNotBlank()) {
                 Text(
-                    text = post.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 2.dp)
+                    text = post.body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (post.body.isNotBlank()) {
-                    Text(
-                        text = post.body,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            }
 
-                if (attachmentUrl != null) {
-                    if (post.attachmentPath.isImagePath()) {
-                        // Tap to open full screen (#16)
-                        AsyncImage(
-                            model = attachmentUrl,
-                            contentDescription = t("Attachment for %s. Tap to enlarge.", post.title),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .padding(top = 8.dp, bottom = 8.dp)
-                                .fillMaxWidth()
-                                .heightIn(max = 220.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onViewImage(attachmentUrl) }
-                        )
-                    } else {
-                        TextButton(onClick = { onOpenAttachment(attachmentUrl) }) {
-                            Icon(Icons.Filled.Description, contentDescription = null)
-                            Text(t("View attachment"), modifier = Modifier.padding(start = 6.dp))
-                        }
-                    }
-                } else {
-                    Spacer(Modifier.height(8.dp))
+            // Photos, Facebook-style; tap opens the swipeable viewer.
+            PostImageGrid(
+                urls = imageUrls,
+                onImageClick = onViewImage,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            if (documentUrl != null) {
+                TextButton(onClick = { onOpenDocument(documentUrl) }) {
+                    Icon(Icons.Filled.Description, contentDescription = null)
+                    Text(t("View attachment"), modifier = Modifier.padding(start = 6.dp))
                 }
             }
+
+            ReactionBar(
+                summary = reactions,
+                onReact = onReact,
+                onShare = onShare,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
-
-private fun String?.isImagePath(): Boolean =
-    this != null && substringAfterLast('.', "").lowercase() in setOf("jpg", "jpeg", "png", "webp")

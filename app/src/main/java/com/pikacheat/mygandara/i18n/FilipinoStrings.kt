@@ -284,6 +284,23 @@ val FilipinoStrings: Map<String, String> = mapOf(
     "Disaster response" to "Pagtugon sa sakuna",
     "Water / power" to "Tubig / kuryente",
 
+    // Post photos & reactions
+    "Photo %d" to "Larawan %d",
+    "Add photos (%1\$d/%2\$d)" to "Magdagdag ng larawan (%1\$d/%2\$d)",
+    "Attach a PDF (optional)" to "Maglakip ng PDF (opsyonal)",
+    "You can add up to 10 photos." to "Hanggang 10 larawan lang ang puwedeng idagdag.",
+    "PDF is too large (max 10 MB)." to "Masyadong malaki ang PDF (max 10 MB).",
+    "Share" to "Ibahagi",
+    "You and %d others" to "Ikaw at %d iba pa",
+    "Reactions (%d)" to "Mga reaksyon (%d)",
+    "Like" to "Gusto",
+    "Love" to "Puso",
+    "Care" to "Malasakit",
+    "Haha" to "Haha",
+    "Wow" to "Wow",
+    "Sad" to "Malungkot",
+    "Angry" to "Galit",
+
     // Appearance
     "Appearance" to "Itsura",
     "System" to "Sundin ang telepono",

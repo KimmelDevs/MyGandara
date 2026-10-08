@@ -57,7 +57,7 @@ Steps 1–5 and 7 are implemented in code; step 6 push notifications are skipped
 (needs `JAVA_HOME` = Android Studio's `jbr`; compileSdk 37, Kotlin 2.4.21, supabase-kt 3.8.0). Not yet tested against a
 live Supabase project.
 
-- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`; checks in `supabase/tests/rls_checks.sql`;
+- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`, `0005_post_images_and_reactions.sql`; checks in `supabase/tests/rls_checks.sql`;
   setup + security model in `supabase/README.md`. Add new SQL as new numbered migration files, never edit applied ones.
 - Status changes go through `report_updates` (trigger copies status onto `reports`). Roles change only via the admin-only
   `set_user_role()` RPC. Reports are rate-limited to 10/hour per user.
@@ -77,5 +77,9 @@ live Supabase project.
   `TranslationsTest` checks placeholders match. The Waray table is a first draft that needs native-speaker review.
 - Hotlines tab (`ui/screens/hotlines/`): `emergency_contacts` table, readable signed-out too (button on Login);
   admins add/edit/delete; last list cached in LocalStore so it works offline. Calls use ACTION_DIAL (no permission).
+- Bulletin posts: `image_paths` (up to 10, `PostImageGrid` Facebook layout + `ImageGalleryDialog` swipe/zoom viewer);
+  `attachment_path` is for a PDF (old posts may have an image there; `PostDto.allImagePaths` merges them).
+  Reactions in `post_reactions` (one per user per post, `ReactionBar`: tap = Like/remove, long-press = picker),
+  updated optimistically in `BulletinViewModel.react`.
 - Theme: System/Light/Dark chosen in Profile (`ThemeModePicker`), provided via `LocalThemeMode` from MainActivity.
 - On-device prefs (`util/LocalStore`): language, theme mode, cached hotlines, seen report versions ("Updated" dot), dismissed emergency banner.

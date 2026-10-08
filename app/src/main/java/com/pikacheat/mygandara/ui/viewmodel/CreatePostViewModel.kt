@@ -19,7 +19,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+const val MAX_POST_IMAGES = 10
+
 data class CreatePostState(
+    /** Photos shown as a Facebook-style grid (up to [MAX_POST_IMAGES]). */
+    val imageUris: List<Uri> = emptyList(),
+    /** Optional PDF (e.g. an ordinance). */
     val attachmentUri: Uri? = null,
     val attachmentName: String? = null,
     val isSubmitting: Boolean = false,
@@ -42,6 +47,16 @@ class CreatePostViewModel(
         _state.update { it.copy(attachmentUri = uri, attachmentName = name) }
     }
 
+    fun addImages(uris: List<Uri>) = _state.update {
+        val combined = (it.imageUris + uris).distinct()
+        it.copy(
+            imageUris = combined.take(MAX_POST_IMAGES),
+            error = if (combined.size > MAX_POST_IMAGES) "You can add up to 10 photos." else null
+        )
+    }
+
+    fun removeImage(uri: Uri) = _state.update { it.copy(imageUris = it.imageUris - uri) }
+
     fun clearError() = _state.update { it.copy(error = null) }
 
     fun submit(type: PostType, title: String, body: String, pinned: Boolean) {
@@ -53,12 +68,16 @@ class CreatePostViewModel(
         viewModelScope.launch {
             val error = runAction {
                 val attachmentPath = current.attachmentUri?.let { uploadAttachment(it) }
+                val imagePaths = current.imageUris.map { uri ->
+                    postRepository.uploadAttachment(ImageCompressor.compressToJpeg(app, uri), "jpg", ContentType.Image.JPEG)
+                }
                 postRepository.createPost(
                     NewPost(
                         type = type,
                         title = title.trim(),
                         body = body.trim(),
                         attachmentPath = attachmentPath,
+                        imagePaths = imagePaths,
                         pinned = pinned
                     )
                 )

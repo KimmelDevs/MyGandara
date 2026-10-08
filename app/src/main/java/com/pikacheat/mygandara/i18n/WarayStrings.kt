@@ -287,6 +287,23 @@ val WarayStrings: Map<String, String> = mapOf(
     "Disaster response" to "Pagresponde ha kalamidad",
     "Water / power" to "Tubig / kuryente",
 
+    // Post photos & reactions
+    "Photo %d" to "Litrato %d",
+    "Add photos (%1\$d/%2\$d)" to "Pagdugang hin litrato (%1\$d/%2\$d)",
+    "Attach a PDF (optional)" to "Pagbutang hin PDF (diri kinahanglan)",
+    "You can add up to 10 photos." to "Tubtob 10 nga litrato la an puydi idugang.",
+    "PDF is too large (max 10 MB)." to "Sobra kadako an PDF (max 10 MB).",
+    "Share" to "Ipaambit",
+    "You and %d others" to "Ikaw ngan %d iba pa",
+    "Reactions (%d)" to "Mga reaksyon (%d)",
+    "Like" to "Karuyag",
+    "Love" to "Gugma",
+    "Care" to "Pag-ataman",
+    "Haha" to "Haha",
+    "Wow" to "Wow",
+    "Sad" to "Kasubo",
+    "Angry" to "Kasina",
+
     // Appearance
     "Appearance" to "Itsura",
     "System" to "Sundon an telepono",

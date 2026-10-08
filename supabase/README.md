@@ -8,6 +8,7 @@ Everything here works on Supabase's **free plan**.
    - `migrations/0002_profile_email_and_hardening.sql`
    - `migrations/0003_cancel_and_reference_numbers.sql` (reference numbers like MG-2026-0042, and letting citizens cancel pending reports)
    - `migrations/0004_emergency_contacts.sql` (emergency hotlines; seeds 911 and Red Cross 143 — admins add the local Gandara numbers in the app)
+   - `migrations/0005_post_images_and_reactions.sql` (up to 10 photos per bulletin post, and Facebook-style reactions)
 3. **Authentication → Sign In / Providers → Email**: for testing, turn **Confirm email** off. Supabase's built-in email sender only allows a few emails per hour; before launch, either keep it off or add a free SMTP provider (Authentication → Emails → SMTP).
 4. **Project Settings → API**: copy the Project URL and the `anon` public key into the root `local.properties`:
 
@@ -40,6 +41,7 @@ Sign out and back in. From then on, admins change roles from the **Users** tab.
 | Report timeline | read own reports' | read all, add updates (status changes go through here) | same as staff | — |
 | Bulletin posts | read | read | create, edit, delete | read |
 | Emergency hotlines | read | read | add, edit, delete | read |
+| Post reactions | see all counts; add/change/remove own | same | same | — |
 | `report-photos` bucket (private) | upload to own folder, read own | read all | read all | — |
 | `post-attachments` bucket (public) | read | read | upload, delete | read |
 

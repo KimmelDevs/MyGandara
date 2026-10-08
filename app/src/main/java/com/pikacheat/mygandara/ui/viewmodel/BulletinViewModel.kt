@@ -3,7 +3,9 @@ package com.pikacheat.mygandara.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pikacheat.mygandara.data.model.PostDto
+import com.pikacheat.mygandara.data.model.PostReaction
 import com.pikacheat.mygandara.data.model.PostType
+import com.pikacheat.mygandara.data.model.ReactionType
 import com.pikacheat.mygandara.data.remote.Tables
 import com.pikacheat.mygandara.data.repository.PostRepository
 import com.pikacheat.mygandara.data.repository.RealtimeRepository
@@ -13,14 +15,35 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** What the reaction bar under a post needs. */
+data class ReactionSummary(
+    val total: Int,
+    /** Most-used reactions first, for the little emoji stack (Facebook shows up to 3). */
+    val top: List<ReactionType>,
+    val counts: Map<ReactionType, Int>,
+    val mine: ReactionType?
+) {
+    companion object {
+        val EMPTY = ReactionSummary(0, emptyList(), emptyMap(), null)
+    }
+}
 
 class BulletinViewModel(
     private val postRepository: PostRepository,
-    realtimeRepository: RealtimeRepository
+    realtimeRepository: RealtimeRepository,
+    private val currentUserId: String
 ) : ViewModel() {
 
-    val posts = Loadable(viewModelScope) { postRepository.getPosts() }
+    val posts = Loadable(viewModelScope) {
+        postRepository.getPosts().also { loadReactions(it) }
+    }
+
+    /** post id -> everyone's reactions on it. Updated optimistically when the user reacts. */
+    private val _reactions = MutableStateFlow<Map<String, List<PostReaction>>>(emptyMap())
+    val reactions: StateFlow<Map<String, List<PostReaction>>> = _reactions.asStateFlow()
 
     /** null = all types. */
     private val _filter = MutableStateFlow<PostType?>(null)
@@ -28,6 +51,25 @@ class BulletinViewModel(
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
+
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message.asStateFlow()
+
+    init {
+        posts.refresh()
+        realtimeRepository.tableChanges(Tables.POSTS)
+            .onEach { posts.refresh(showIndicator = false) }
+            .catch { /* live updates are best-effort; pull to refresh still works */ }
+            .launchIn(viewModelScope)
+        realtimeRepository.tableChanges(Tables.POST_REACTIONS)
+            .onEach { reloadReactions() }
+            .catch { }
+            .launchIn(viewModelScope)
+    }
+
+    fun setFilter(type: PostType?) {
+        _filter.value = type
+    }
 
     fun setQuery(value: String) {
         _query.value = value
@@ -41,22 +83,42 @@ class BulletinViewModel(
         }
     }
 
-    private val _message = MutableStateFlow<String?>(null)
-    val message: StateFlow<String?> = _message.asStateFlow()
+    fun imageUrls(post: PostDto): List<String> = post.allImagePaths.map(postRepository::attachmentUrl)
 
-    init {
-        posts.refresh()
-        realtimeRepository.tableChanges(Tables.POSTS)
-            .onEach { posts.refresh(showIndicator = false) }
-            .catch { /* live updates are best-effort; pull to refresh still works */ }
-            .launchIn(viewModelScope)
+    fun documentUrl(post: PostDto): String? = post.documentPath?.let(postRepository::attachmentUrl)
+
+    fun summary(postId: String, all: Map<String, List<PostReaction>>): ReactionSummary {
+        val list = all[postId].orEmpty()
+        if (list.isEmpty()) return ReactionSummary.EMPTY
+        val counts = list.groupingBy { it.reaction }.eachCount()
+        return ReactionSummary(
+            total = list.size,
+            top = counts.entries.sortedByDescending { it.value }.take(3).map { it.key },
+            counts = counts,
+            mine = list.firstOrNull { it.userId == currentUserId }?.reaction
+        )
     }
 
-    fun setFilter(type: PostType?) {
-        _filter.value = type
-    }
+    /**
+     * Facebook behaviour: picking the reaction you already have removes it; picking another one switches.
+     * The UI updates immediately; if the server rejects it, the real state is reloaded.
+     */
+    fun react(postId: String, picked: ReactionType) {
+        val current = _reactions.value[postId].orEmpty().firstOrNull { it.userId == currentUserId }?.reaction
+        val next = if (picked == current) null else picked
 
-    fun attachmentUrl(post: PostDto): String? = post.attachmentPath?.let(postRepository::attachmentUrl)
+        _reactions.update { map ->
+            val others = map[postId].orEmpty().filterNot { it.userId == currentUserId }
+            map + (postId to (if (next == null) others else others + PostReaction(postId, currentUserId, next)))
+        }
+        viewModelScope.launch {
+            val error = runAction { postRepository.setReaction(postId, current, next) }
+            if (error != null) {
+                _message.value = error
+                reloadReactions()
+            }
+        }
+    }
 
     fun deletePost(post: PostDto) {
         viewModelScope.launch {
@@ -69,7 +131,19 @@ class BulletinViewModel(
         _message.value = null
     }
 
+    private suspend fun loadReactions(posts: List<PostDto>) {
+        runCatching { postRepository.getReactions(posts.map { it.id }) }
+            .onSuccess { list -> _reactions.value = list.groupBy { it.postId } }
+    }
+
+    private fun reloadReactions() {
+        val loaded = (posts.state.value as? UiState.Success)?.data ?: return
+        viewModelScope.launch { loadReactions(loaded) }
+    }
+
     companion object {
-        val Factory = appViewModelFactory { BulletinViewModel(it.postRepository, it.realtimeRepository) }
+        fun factory(currentUserId: String) = appViewModelFactory {
+            BulletinViewModel(it.postRepository, it.realtimeRepository, currentUserId)
+        }
     }
 }

@@ -44,7 +44,7 @@ import com.pikacheat.mygandara.ui.components.ConfirmDialog
 import com.pikacheat.mygandara.ui.components.EmptyListText
 import com.pikacheat.mygandara.ui.components.SearchField
 import com.pikacheat.mygandara.ui.components.SkeletonList
-import com.pikacheat.mygandara.ui.components.ZoomableImageDialog
+import com.pikacheat.mygandara.ui.components.ImageGalleryDialog
 import com.pikacheat.mygandara.ui.components.PostCard
 import com.pikacheat.mygandara.ui.components.RefreshOnResume
 import com.pikacheat.mygandara.ui.components.UiStateContent
@@ -54,9 +54,10 @@ import com.pikacheat.mygandara.ui.viewmodel.BulletinViewModel
 @Composable
 fun BulletinScreen(
     canPost: Boolean,
+    currentUserId: String,
     onNewPostClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: BulletinViewModel = viewModel(factory = BulletinViewModel.Factory)
+    viewModel: BulletinViewModel = viewModel(factory = BulletinViewModel.factory(currentUserId))
 ) {
     val state by viewModel.posts.state.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.posts.isRefreshing.collectAsStateWithLifecycle()
@@ -67,7 +68,9 @@ fun BulletinScreen(
     val language = LocalLanguage.current
     val query by viewModel.query.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<PostDto?>(null) }
-    var viewingImage by remember { mutableStateOf<String?>(null) }
+    val reactions by viewModel.reactions.collectAsStateWithLifecycle()
+    // (photo urls, index tapped) for the full-screen gallery
+    var gallery by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
 
     LaunchedEffect(message) {
         message?.let {
@@ -131,13 +134,17 @@ fun BulletinScreen(
                     item { EmptyListText(if (posts.isEmpty()) "No posts yet." else "No posts match your search.") }
                 }
                 items(visible, key = { it.id }) { post ->
+                    val imageUrls = viewModel.imageUrls(post)
                     PostCard(
                         post = post,
-                        attachmentUrl = viewModel.attachmentUrl(post),
-                        onOpenAttachment = { url ->
+                        imageUrls = imageUrls,
+                        documentUrl = viewModel.documentUrl(post),
+                        reactions = viewModel.summary(post.id, reactions),
+                        onOpenDocument = { url ->
                             context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
                         },
-                        onViewImage = { url -> viewingImage = url },
+                        onViewImage = { index -> gallery = imageUrls to index },
+                        onReact = { type -> viewModel.react(post.id, type) },
                         onShare = { sharePost(context, post, language) },
                         onDelete = if (canPost) ({ pendingDelete = post }) else null
                     )
@@ -159,8 +166,8 @@ fun BulletinScreen(
             onDismiss = { pendingDelete = null }
         )
     }
-    viewingImage?.let { url ->
-        ZoomableImageDialog(url = url, contentDescription = null, onDismiss = { viewingImage = null })
+    gallery?.let { (urls, index) ->
+        ImageGalleryDialog(urls = urls, startIndex = index, onDismiss = { gallery = null })
     }
 }
 

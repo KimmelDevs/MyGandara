@@ -3,9 +3,20 @@ package com.pikacheat.mygandara.ui.screens.bulletin
 import com.pikacheat.mygandara.i18n.t
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.FilledTonalIconButton
+import coil3.compose.AsyncImage
+import com.pikacheat.mygandara.ui.viewmodel.MAX_POST_IMAGES
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -66,7 +77,7 @@ fun CreatePostScreen(
     var body by rememberSaveable { mutableStateOf("") }
     var pinned by rememberSaveable { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
-    val hasDraft = title.isNotBlank() || body.isNotBlank() || state.attachmentUri != null
+    val hasDraft = title.isNotBlank() || body.isNotBlank() || state.attachmentUri != null || state.imageUris.isNotEmpty()
     val tryLeave = { if (hasDraft && !state.isSubmitting) confirmDiscard = true else onBackClick() }
 
     BackHandler(enabled = hasDraft && !state.posted) { tryLeave() }
@@ -74,6 +85,9 @@ fun CreatePostScreen(
     val pickAttachment = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) viewModel.setAttachment(uri)
     }
+    val pickPhotos = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(MAX_POST_IMAGES)
+    ) { uris -> if (uris.isNotEmpty()) viewModel.addImages(uris) }
 
     LaunchedEffect(state.posted) {
         if (state.posted) onPosted()
@@ -145,6 +159,47 @@ fun CreatePostScreen(
                 Switch(checked = pinned, onCheckedChange = { pinned = it })
             }
 
+            // Photos (shown as a Facebook-style grid on the bulletin)
+            if (state.imageUris.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(state.imageUris, key = { it.toString() }) { uri ->
+                        Box {
+                            AsyncImage(
+                                model = uri,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(96.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                            FilledTonalIconButton(
+                                onClick = { viewModel.removeImage(uri) },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(28.dp)
+                                    .padding(2.dp)
+                            ) {
+                                Icon(Icons.Filled.Close, contentDescription = t("Remove photo"), modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+            if (state.imageUris.size < MAX_POST_IMAGES) {
+                OutlinedButton(
+                    onClick = {
+                        pickPhotos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.PhotoLibrary, contentDescription = null)
+                    Text(
+                        t("Add photos (%1\$d/%2\$d)", state.imageUris.size, MAX_POST_IMAGES),
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
+                }
+            }
+
             if (state.attachmentUri != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.AttachFile, contentDescription = null)
@@ -162,11 +217,11 @@ fun CreatePostScreen(
                 }
             } else {
                 OutlinedButton(
-                    onClick = { pickAttachment.launch(arrayOf("image/*", "application/pdf")) },
+                    onClick = { pickAttachment.launch(arrayOf("application/pdf")) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Filled.AttachFile, contentDescription = null)
-                    Text(t("Attach image or PDF (optional)"), modifier = Modifier.padding(start = 6.dp))
+                    Text(t("Attach a PDF (optional)"), modifier = Modifier.padding(start = 6.dp))
                 }
             }
 
